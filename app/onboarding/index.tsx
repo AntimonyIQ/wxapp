@@ -1,0 +1,214 @@
+import React from "react";
+import { Dimensions, FlatList, Platform, Pressable, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { router, Stack } from "expo-router";
+import PrimaryButton from "@/components/button/primary";
+import { Image } from "expo-image";
+
+interface IProps { }
+
+interface IState {
+    currentIndex: number;
+}
+
+interface Carouse {
+    id: string;
+    image: string;
+    title: string;
+    description: string;
+}
+
+const { width, height } = Dimensions.get("screen");
+
+export default class OnboardingScreen extends React.Component<IProps, IState> {
+    private readonly carouselItem: Carouse[] = [
+        {
+            id: '1',
+            image: require("../../assets/icons/splash_one.svg"),
+            title: 'Take Control of Your Crypto',
+            description: 'Buy, sell, and trade your favorite cryptocurrencies with ease.'
+        },
+        {
+            id: '2',
+            image: require("../../assets/icons/splash_two.svg"),
+            title: 'Pay Bills with Crypto',
+            description: 'Use your crypto to seamlessly pay bills directly from the app'
+        },
+        {
+            id: '3',
+            image: require("../../assets/icons/splash_three.svg"),
+            title: 'Swap Faster, Manage Smarter',
+            description: 'Swap coins directly within the app, saving you time and transaction fees.'
+        },
+    ];
+    private FlatListRef: React.RefObject<FlatList<Carouse>>;
+    private viewConfigRef: { viewAreaCoveragePercentThreshold: number; };
+    private autoSlideTimer: number | undefined;
+    constructor(props: IProps) {
+        super(props);
+        this.state = {
+            currentIndex: 0,
+        };
+        this.FlatListRef = React.createRef<FlatList<Carouse>>() as React.RefObject<FlatList<Carouse>>;
+        this.viewConfigRef = { viewAreaCoveragePercentThreshold: 95 };
+    }
+
+    componentDidMount(): void {
+        this.startAutoSlide();
+    }
+
+    componentWillUnmount(): void {
+        clearInterval(this.autoSlideTimer);
+    }
+
+    private startAutoSlide = (): void => {
+        this.autoSlideTimer = setInterval(() => {
+            const { currentIndex } = this.state;
+            const nextIndex = (currentIndex + 1) % this.carouselItem.length;
+            this.scrollToIndex(nextIndex);
+        }, 5000);
+    }
+
+    private onViewStart = ({ viewableItems }: { viewableItems: { isViewable: boolean; index: number | null }[] }): void => {
+        const viewableItem = viewableItems.find(item => item.isViewable);
+        if (viewableItem && viewableItem.index !== null) {
+            this.setState({ currentIndex: viewableItem.index });
+        }
+    }
+
+    private scrollToIndex = (index: number): void => {
+        this.FlatListRef.current?.scrollToIndex({ animated: true, index: index });
+        this.setState({ currentIndex: index });
+    }
+
+    renderItem = ({ item }: { item: Carouse }): React.JSX.Element => {
+        return (
+            <View style={styles.carouselItemContainer}>
+                <TouchableOpacity
+                    style={{}}>
+                    <Image
+                        source={item.image}
+                        style={{ width: width - (Platform.OS === "web" ? 100 : 140), height: height - 550 }}
+                        contentFit="contain"
+                        transition={1000}
+                    />
+                </TouchableOpacity>
+                <View style={{ gap: 16, alignItems: 'center', paddingHorizontal: 20 }}>
+                    <Text style={styles.text}>{item.title}</Text>
+                    <Text style={styles.subtext}>{item.description}</Text>
+                </View>
+            </View>
+        );
+    }
+
+    render(): React.ReactNode {
+        const { currentIndex } = this.state;
+        return (
+            <>
+                <Stack.Screen options={{ title: 'Onboarding', headerShown: false }} />
+                <SafeAreaView style={styles.safeArea}>
+                    <View style={styles.container}>
+                        <FlatList
+                            data={this.carouselItem}
+                            renderItem={this.renderItem}
+                            horizontal={true}
+                            pagingEnabled={true}
+                            showsHorizontalScrollIndicator={false}
+                            ref={this.FlatListRef}
+                            viewabilityConfig={this.viewConfigRef}
+                            onViewableItemsChanged={this.onViewStart}
+                            style={{ width, height }}
+                            contentContainerStyle={{}}
+                            snapToAlignment="center"
+                        />
+
+                        <View
+                            style={{
+                                alignItems: 'center',
+                                justifyContent: 'flex-end',
+                                paddingHorizontal: 18,
+                                bottom: 20,
+                                alignSelf: 'center',
+                                width: '100%',
+                            }}
+                        >
+                            <View style={styles.dotView}>
+                                {this.carouselItem.map((_, index) => (
+                                    <Pressable
+                                        key={index.toString()}
+                                        style={({ pressed }) => [
+                                            styles.circle,
+                                            {
+                                                backgroundColor: pressed
+                                                    ? 'white'
+                                                    : currentIndex === index
+                                                        ? '#000000'
+                                                        : '#FFFFFF',
+                                            },
+                                        ]}
+                                        onPress={() => this.scrollToIndex(index)}
+                                    />
+                                ))}
+                            </View>
+                        </View>
+
+                        <View style={{ paddingHorizontal: 18, marginTop: 41, gap: 16, width: "100%" }}>
+                            <PrimaryButton
+                                Gradient
+                                title={'Create Account'}
+                                onPress={() => router.navigate('/onboarding/signup')}
+                            />
+                            <PrimaryButton title={'Login'} onPress={() => router.navigate('/onboarding/login')} />
+                        </View>
+                    </View>
+                </SafeAreaView>
+            </>
+        )
+    }
+}
+
+const styles = StyleSheet.create({
+    safeArea: {
+        flex: 1,
+        paddingTop: Platform.OS === 'android' ? 50 : Platform.OS === "web" ? 20 : 0,
+    },
+    container: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 20,
+        height: '100%',
+    },
+    link: {
+        marginTop: 15,
+        paddingVertical: 15,
+    },
+    subtext: {
+        fontSize: 16,
+        lineHeight: 20,
+        textAlign: 'center',
+        fontFamily: 'AeonikMedium',
+    },
+    text: {
+        fontSize: 24,
+        lineHeight: 24,
+        textAlign: 'center',
+        fontFamily: 'AeonikBold',
+    },
+    carouselItemContainer: {
+        width: width,
+        height: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    dotView: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        marginVertical: 20,
+        alignItems: 'center',
+    },
+    circle: {
+        width: 8,
+        height: 8,
+        borderRadius: 5,
+        marginHorizontal: 5,
+    },
+});

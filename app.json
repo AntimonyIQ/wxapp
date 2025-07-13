@@ -9,14 +9,30 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.wealthx.app.wxconcept",
+      "appleId": "wealthx01@gmail.com",
+      "ascAppId": "1631695138",
+      "buildNumber": "25",
+      "infoPlist": {
+        "UIFileSharingEnabled": true,
+        "LSSupportsOpeningDocumentsInPlace": true,
+        "UIBackgroundModes": [
+          "fetch"
+        ]
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "INTERNET",
+        "RECEIVE_BOOT_COMPLETED"
+      ],
+      "package": "com.wealthx.wallet"
     },
     "web": {
       "bundler": "metro",
@@ -37,6 +53,17 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "8a2d478e-07ff-4249-bfb0-bd28bde0fcc3"
+      }
+    },
+    "owner": "antimonyiq",
+    "runtimeVersion": "1.0.0",
+    "updates": {
+      "enabled": false,
+      "url": "https://u.expo.dev/8a2d478e-07ff-4249-bfb0-bd28bde0fcc3"
     }
   }
 }

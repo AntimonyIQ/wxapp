@@ -1,0 +1,10 @@
+<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <g id="bell">
+        <path id="Icon"
+            d="M14.5 7C14.5 5.80653 14.0259 4.66193 13.182 3.81802C12.3381 2.97411 11.1935 2.5 10 2.5C8.80653 2.5 7.66193 2.97411 6.81802 3.81802C5.97411 4.66193 5.5 5.80653 5.5 7C5.5 12.25 3.25 13.75 3.25 13.75H16.75C16.75 13.75 14.5 12.25 14.5 7Z"
+            stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+        <path id="Icon_2"
+            d="M11.2975 16.75C11.1657 16.9773 10.9764 17.166 10.7487 17.2971C10.521 17.4283 10.2628 17.4973 10 17.4973C9.73723 17.4973 9.47906 17.4283 9.25134 17.2971C9.02363 17.166 8.83437 16.9773 8.70251 16.75"
+            stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+    </g>
+</svg>
