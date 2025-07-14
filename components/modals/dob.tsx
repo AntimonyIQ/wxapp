@@ -1,10 +1,9 @@
 import { Colors } from '@/constants/Colors';
 import React from 'react';
 import { Modal, TouchableOpacity, StyleSheet, TouchableWithoutFeedback, Appearance, TextInput } from 'react-native';
-import { ThemedView } from '../ThemedView';
-import { ThemedText } from '../ThemedText';
-import logger from '@/logger/logger';
 import Toast from 'react-native-toast-message';
+import ThemedView from '../ThemedView';
+import ThemedText from '../ThemedText';
 
 interface DOBProps {
     visible: boolean;
@@ -149,6 +148,7 @@ const styles = StyleSheet.create({
         padding: 20,
         borderRadius: 10,
         alignItems: "flex-start",
+        backgroundColor: "#FFF"
     },
     dialogTitle: {
         fontSize: 18,

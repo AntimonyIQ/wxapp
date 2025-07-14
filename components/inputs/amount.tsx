@@ -1,27 +1,24 @@
 import React from 'react';
 import { View, Text, TextInput, StyleSheet, Pressable, Appearance } from 'react-native';
-import logger from '@/logger/logger';
 import { Coin } from '@/enums/enums';
 import ThemedText from '../ThemedText';
+import { IMarket } from '@/interface/interface';
 
 interface AmountFieldProps {
     onFocus: Function;
     onBlur: Function;
-    getTransactionFee: Function;
-    getEquivalentAmount: Function;
     onChangeText: Function;
     coinRate: Function;
-    onEquivalentAmountChange: Function;
     placeholder: string;
     showText: boolean;
     value: string;
     title: string;
-    secureTextEntry: boolean;
     maxLength: number;
     symbol: string;
     rate: number;
     balance: number;
     currencyName: string;
+    asset: IMarket;
 }
 
 interface AmountFieldState {
@@ -45,30 +42,6 @@ export default class AmountField extends React.Component<AmountFieldProps, Amoun
     private handleBlur = () => {
         const { onBlur } = this.props;
         onBlur();
-    };
-
-    private setEquivalentAmount = (value: string) => {
-        const { getEquivalentAmount } = this.props;
-        if (getEquivalentAmount) {
-            getEquivalentAmount(value);
-        }
-    }
-
-    private calculateEquivalentAmount = async (usdAmount: number) => {
-        const { onEquivalentAmountChange, symbol } = this.props;
-
-        try {
-            const { rate: exchangeRate } = this.props;
-            const equivalentAmount = symbol.toUpperCase() === Coin.USDC || symbol.toUpperCase() === Coin.USDT
-                ? usdAmount * exchangeRate
-                : usdAmount / exchangeRate;
-
-            this.setState({ equivalentAmount, exchangeRate });
-            onEquivalentAmountChange(equivalentAmount);
-            this.setEquivalentAmount(String(equivalentAmount));
-        } catch (error) {
-            logger.error('Error fetching exchange rate:', error);
-        }
     };
 
     private validateAndFormatInput = (text: string) => {
@@ -104,17 +77,13 @@ export default class AmountField extends React.Component<AmountFieldProps, Amoun
 
         const formattedText = this.validateAndFormatInput(text);
         onChangeText(formattedText);
-        this.calculateEquivalentAmount(parseFloat(formattedText));
     }
 
     private handleMaxTextChange = (text = "") => {
         const { onChangeText, rate } = this.props;
-
         const amt: string = (parseFloat(text) * rate).toFixed(2);
-
         const formattedText = this.validateAndFormatInput(amt.toString());
         onChangeText(formattedText);
-        this.calculateEquivalentAmount(parseFloat(formattedText));
     }
 
     render() {
@@ -123,14 +92,10 @@ export default class AmountField extends React.Component<AmountFieldProps, Amoun
             showText,
             value,
             title,
-            secureTextEntry,
             maxLength,
             symbol,
-            rate,
-            balance,
+            asset,
         } = this.props;
-
-        const { equivalentAmount, } = this.state;
 
         return (
             <View
@@ -142,7 +107,7 @@ export default class AmountField extends React.Component<AmountFieldProps, Amoun
                     {showText && (
                         <ThemedText style={styles.labelText}>{title}</ThemedText>
                     )}
-                    <Pressable onPress={() => this.handleMaxTextChange(balance.toString())} style={{ paddingHorizontal: 10, paddingVertical: 2, borderWidth: 1, borderColor: "#253E92", borderRadius: 360, alignItems: "center", justifyContent: "center" }}>
+                    <Pressable onPress={() => this.handleMaxTextChange(asset.balance.toString())} style={{ paddingHorizontal: 10, paddingVertical: 2, borderWidth: 1, borderColor: "#253E92", borderRadius: 360, alignItems: "center", justifyContent: "center" }}>
                         <Text style={{ fontFamily: 'AeonikRegular', fontSize: 11, color: "#253E92" }}>Max</Text>
                     </Pressable>
                 </View>
@@ -156,16 +121,16 @@ export default class AmountField extends React.Component<AmountFieldProps, Amoun
                         onBlur={this.handleBlur}
                         onFocus={this.handleFocus}
                         autoCorrect={false}
-                        secureTextEntry={secureTextEntry}
+                        secureTextEntry={false}
                         keyboardType="decimal-pad"
                         maxLength={maxLength || undefined}
                     />
                 </View>
                 <View style={styles.inputSecondary}>
                     <Text style={styles.inputSecondaryTextLeft}>
-                        Approx {equivalentAmount ? equivalentAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 }) : "n/a"} {symbol}
+                        Approx {(Number(value) / asset.price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: (asset.currency === Coin.USDC || asset.currency === Coin.USDT) ? 2 : 6 }) || "n/a"} {symbol}
                     </Text>
-                    <Text style={styles.inputSecondaryTextRight}>1 {symbol} = {rate ? rate.toFixed(2) : "n/a"} USD</Text>
+                    <Text style={styles.inputSecondaryTextRight}>1 {symbol} = {asset.price.toFixed(2) || "n/a"} USD</Text>
                 </View>
             </View>
         );

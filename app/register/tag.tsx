@@ -106,7 +106,9 @@ export default class TagScreen extends React.Component<IProps, IState> {
                         <ThemedText>{!username ? null : `${username.toLowerCase()}-wx`}</ThemedText>
 
                         <ThemedView style={{ marginTop: 40, gap: 40 }}>
-                            <PrimaryButton Gradient title={'Continue'} onPress={this.handleUsernameDetails} />
+                            {(username && username.length > 3)
+                                ? <PrimaryButton Gradient title={'Continue'} onPress={this.handleUsernameDetails} />
+                                : <PrimaryButton Grey disabled title={'Continue'} onPress={(): void => { }} />}
                             <Pressable style={{ alignSelf: 'center' }}>
                                 <ThemedText
                                     style={{

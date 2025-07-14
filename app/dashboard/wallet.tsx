@@ -1,7 +1,19 @@
+// This is part for the Wealthx Mobile Application.
+// Copyright © 2023 WealthX. All rights reserved.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// http://www.apache.org/licenses/LICENSE-2.0
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 import React from "react";
 import sessionManager from "../../session/session";
-import { IMarket, UserData } from "@/interface/interface";
-import { ActivityIndicator, Appearance, ColorSchemeName, Platform, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, View } from "react-native";
+import { IMarket, IParams, IResponse, UserData } from "@/interface/interface";
+import { ActivityIndicator, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import logger from "@/logger/logger";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -15,30 +27,30 @@ import Defaults from "../default/default";
 import ThemedSafeArea from "@/components/ThemeSafeArea";
 import ThemedView from "@/components/ThemedView";
 import ThemedText from "@/components/ThemedText";
+import { Status } from "@/enums/enums";
 
 interface IProps { }
 
 interface IState {
     hideBalance: boolean;
     marketsLoading: boolean;
-    usdbal: number;
     markets: IMarket[];
     refreshing: boolean;
-    NGN_BALANCE: number;
-    addressLoading: boolean;
-    totalBalances: {}
+    totalBalances: {};
+    totalBalanceUsd: number;
 }
 
 export default class WalletScreen extends React.Component<IProps, IState> {
     private session: UserData = sessionManager.getUserData();
-    private appreance: ColorSchemeName = Appearance.getColorScheme();
-    private avatar: Result;
+    private avatar: any;
     constructor(props: IProps) {
         super(props);
-        this.state = { hideBalance: false, totalBalances: {}, usdbal: 0, NGN_BALANCE: 0, addressLoading: false, marketsLoading: false, markets: [], refreshing: false };
-        if (!this.session || !this.session.isLoggedIn) {
+        this.state = { hideBalance: false, totalBalanceUsd: 0, totalBalances: {}, marketsLoading: false, markets: [], refreshing: false };
+        const login: boolean = Defaults.LOGIN_STATUS();
+        if (!login) {
             logger.log("Session not found. Redirecting to login screen.");
-            router.dismissTo("/");
+            router.dismissTo(this.session.user?.passkeyEnabled === true ? "/passkey" : '/onboarding/login');
+            return;
         };
 
         this.avatar = createAvatar(micah, {
@@ -55,42 +67,57 @@ export default class WalletScreen extends React.Component<IProps, IState> {
         this.setState({ hideBalance: this.session.hideBalance || false });
     }
 
-
     loadLocalSavedData = () => {
-        const addresses = this.session.addresses;
-        const totalBalance = this.session.totalBalance;
         const markets = this.session.markets;
-        const NGN_BALANCE = this.session.NGN_BALANCE;
-        const usdbal = this.session.usdbal;
         this.setState({
-            usdbal,
             hideBalance: this.session.hideBalance || false,
-            markets: markets || [],
+            markets: Defaults.FILTER_MARKET(markets ? markets : [], ["USDC", 'USDT']) || [],
         });
     };
 
     private fetchMarkets = async () => {
         try {
             this.setState({ marketsLoading: true });
+            await Defaults.IS_NETWORK_AVAILABLE();
 
-            const response = await fetch(`${Defaults.API}/markets`, {
-                method: "GET",
-                headers: { ...Defaults.HEADERS, "Authorization": `Bearer ${this.session.accessToken}` },
+            const login: boolean = Defaults.LOGIN_STATUS();
+            if (!login) {
+                logger.log("Session not found. Redirecting to login screen.");
+                router.dismissTo(this.session.user?.passkeyEnabled === true ? "/passkey" : '/onboarding/login');
+                return;
+            };
+
+            const res = await fetch(`${Defaults.API}/wallet`, {
+                method: 'GET',
+                headers: {
+                    ...Defaults.HEADERS,
+                    'x-wealthx-handshake': this.session.client?.publicKey,
+                    'x-wealthx-deviceid': this.session.deviceid,
+                    Authorization: `Bearer ${this.session.authorization}`,
+                },
             });
 
-            if (!response.ok) throw new Error("Failed to fetch markets " + response.status.toString());
+            const data: IResponse = await res.json();
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
+                if (!data.handshake) throw new Error('Unable to process data right now, please try again.');
+                const parseData = Defaults.PARSE_DATA(data.data, this.session.client?.privateKey, data.handshake);
+                const mkt: Array<IMarket> = Defaults.FILTER_MARKET(parseData.markets, ["USDC", 'USDT']);
 
-            const data = await response.json();
-            if (data.status === "success") {
                 this.setState({
-                    markets: data.data || [],
+                    markets: mkt,
+                    totalBalanceUsd: parseData.totalBalanceUsd,
                 });
 
                 await sessionManager.updateSession({
                     ...this.session,
-                    markets: data.data,
+                    markets: parseData.markets,
+                    transactions: parseData.transactions,
+                    totalBalanceNgn: parseData.totalBalanceNgn,
+                    totalBalanceUsd: parseData.totalBalanceUsd,
                 });
-            }
+            };
+
         } catch (error: any) {
             console.log(error);
             this.setState({ marketsLoading: false });
@@ -112,16 +139,15 @@ export default class WalletScreen extends React.Component<IProps, IState> {
         }
     };
 
-    private handleSelectedCoin = async (market: IMarket) => {
-        const { addressLoading } = this.state;
-        if (addressLoading) return;
-
-        await sessionManager.updateSession({ ...this.session, market });
+    private handleSelectedCoin = async (item: IMarket) => {
+        const market: IMarket = Defaults.FIND_MARKET(item.currency, item.network);
+        const params: IParams = { currency: market.currency, network: market.network };
+        await sessionManager.updateSession({ ...this.session, params: params });
         router.navigate("/coin");
     }
 
     render(): React.ReactNode {
-        const { hideBalance, usdbal, marketsLoading, markets, refreshing } = this.state;
+        const { hideBalance, marketsLoading, markets, refreshing, totalBalanceUsd } = this.state;
         return (
             <>
                 <Stack.Screen options={{ title: 'Wallet', headerShown: false }} />
@@ -134,10 +160,6 @@ export default class WalletScreen extends React.Component<IProps, IState> {
                             />
                             <Pressable style={styles.walletSelector}>
                                 <ThemedText style={styles.walletSelectorText}>Main Wallet</ThemedText>
-                                {/*<Image
-                                    source={require("../../assets/icons/chevron-left.svg")}
-                                    style={{ width: 10, right: 10, transform: [{ rotate: '270deg' }] }}
-                                    tintColor={this.appreance === "dark" ? Colors.light.background : Colors.dark.background} />*/}
                             </Pressable>
                             <ThemedView></ThemedView>
                         </ThemedView>
@@ -151,7 +173,7 @@ export default class WalletScreen extends React.Component<IProps, IState> {
                                     <Image
                                         source={!hideBalance ? require("../../assets/icons/eye.svg") : require("../../assets/icons/eyeoff.svg")}
                                         style={{ height: 24, width: 24 }}
-                                        contentFit="contain" tintColor={this.appreance === "dark" ? Colors.dark.text : Colors.light.text}
+                                        contentFit="contain" tintColor={Colors.light.text}
                                         transition={500} />
                                 </Pressable>
                             </ThemedView>
@@ -159,7 +181,7 @@ export default class WalletScreen extends React.Component<IProps, IState> {
                                 <ThemedText style={styles.balanceAmountText}>
                                     {hideBalance
                                         ? "******"
-                                        : (usdbal || 0).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+                                        : (totalBalanceUsd || 0).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
                                 </ThemedText>
                             </ThemedView>
                             <ThemedView style={styles.balancePercentage}>
@@ -173,13 +195,13 @@ export default class WalletScreen extends React.Component<IProps, IState> {
                             </Pressable>
                             {marketsLoading &&
                                 <ThemedView
-                                    style={{ borderRadius: 8, backgroundColor: this.appreance === "dark" ? "#0f0f0f" : "#F5F5F5", height: 500, display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
+                                    style={{ borderRadius: 8, backgroundColor: "#F5F5F5", height: 500, display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
                                     <ActivityIndicator size={40} color={"#253E92"} />
                                 </ThemedView>
                             }
                             {!marketsLoading && markets.length === 0 &&
                                 <ThemedView
-                                    style={{ borderRadius: 8, backgroundColor: this.appreance === "dark" ? "#0f0f0f" : "#F5F5F5", height: 500, display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
+                                    style={{ borderRadius: 8, backgroundColor: "#F5F5F5", height: 500, display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
                                     <ThemedText style={{ fontFamily: 'AeonikRegular', lineHeight: 16, fontSize: 16 }}>No markets available.</ThemedText>
                                 </ThemedView>}
                             {!marketsLoading &&
@@ -206,7 +228,7 @@ export default class WalletScreen extends React.Component<IProps, IState> {
                                                     price: asset.price.toLocaleString(),
                                                     percentage: Number(asset.percent_change_24h.toFixed(2)),
                                                     balanceAmount: (asset.balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 }), // Actual balance
-                                                    balanceInUsd: String(asset.balanceUsd), // Dollar equivalent
+                                                    balanceInUsd: String(asset.balanceUsd),
                                                 }}
                                                 onPress={() => this.handleSelectedCoin(asset)}
                                             />
@@ -217,7 +239,7 @@ export default class WalletScreen extends React.Component<IProps, IState> {
                         </ThemedView>
                     </ThemedSafeArea>
                 </ImageBackground>
-                <StatusBar style={this.appreance === "dark" ? 'light' : "dark"} />
+                <StatusBar style={"dark"} />
             </>
         )
     }
@@ -316,7 +338,7 @@ const styles = StyleSheet.create({
         color: '#070707',
     },
     marketplaceContainer: {
-        paddingHorizontal: 8,
+        paddingHorizontal: 20,
     },
     marketplaceLink: {
         marginBottom: 12,
@@ -329,7 +351,7 @@ const styles = StyleSheet.create({
     },
     transactionHistoryContainer: {
         height: "100%",
-        backgroundColor: Appearance.getColorScheme() === "dark" ? "#0f0f0f" : "#F5F5F5",
+        backgroundColor: "#F5F5F5",
         padding: 18,
         borderRadius: 12,
         gap: 12,

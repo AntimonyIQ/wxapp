@@ -1,19 +1,30 @@
-import { Appearance, ColorSchemeName, Pressable, Text } from 'react-native';
+// This is part for the Wealthx Mobile Application.
+// Copyright © 2023 WealthX. All rights reserved.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// http://www.apache.org/licenses/LICENSE-2.0
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+import { ColorValue, Pressable } from 'react-native';
 import React from 'react';
 import { Image } from 'expo-image';
-import { ThemedText } from '../ThemedText';
-import { Colors } from '@/constants/Colors';
+import ThemedText from '../ThemedText';
 
 interface ProfileButtonProps {
     text: string;
+    textColor?: ColorValue;
     onPress: () => void;
     hideBorder?: boolean;
 }
 
 export default class ProfileButton extends React.Component<ProfileButtonProps> {
-    private appreance: ColorSchemeName = Appearance.getColorScheme();
     render() {
-        const { text, onPress, hideBorder } = this.props;
+        const { text, onPress, hideBorder, textColor } = this.props;
         return (
             <Pressable
                 onPress={onPress}
@@ -22,7 +33,7 @@ export default class ProfileButton extends React.Component<ProfileButtonProps> {
                     justifyContent: 'space-between',
                     paddingVertical: 12,
                     borderBottomWidth: hideBorder === true ? 0 : 1,
-                    borderBottomColor: this.appreance === "dark" ? Colors.dark.background : '#E8E8E8',
+                    borderBottomColor: '#E8E8E8',
                     alignItems: 'center',
                 }}
             >
@@ -31,14 +42,15 @@ export default class ProfileButton extends React.Component<ProfileButtonProps> {
                         fontSize: 14,
                         fontFamily: 'AeonikMedium',
                         lineHeight: 16,
+                        color: textColor ? textColor : '#000000',
                     }}
                 >
                     {text}
                 </ThemedText>
-                <Image 
-                    source={require("../../assets/icons/chevron-left.svg")} 
+                <Image
+                    source={require("../../assets/icons/chevron-left.svg")}
                     style={{ width: 10, right: 10, transform: [{ rotate: '180deg' }] }}
-                    tintColor={this.appreance === "dark" ? Colors.light.background : Colors.dark.background } />
+                    tintColor={"#000000"} />
             </Pressable>
         );
     }

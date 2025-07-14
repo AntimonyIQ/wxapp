@@ -1,7 +1,19 @@
+// This is part for the Wealthx Mobile Application.
+// Copyright © 2023 WealthX. All rights reserved.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// http://www.apache.org/licenses/LICENSE-2.0
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 import React from "react";
 import sessionManager from "@/session/session";
-import { IResponse, ITransaction, UserData } from "@/interface/interface";
-import { ActivityIndicator, ColorSchemeName, Dimensions, FlatList, Platform, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { IParams, IResponse, ITransaction, UserData } from "@/interface/interface";
+import { ActivityIndicator, Dimensions, FlatList, Platform, Pressable, RefreshControl, SafeAreaView, StyleSheet, Text, View } from "react-native";
 import logger from "@/logger/logger";
 import { Href, router, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -15,10 +27,9 @@ import Card from "@/components/card";
 import { createAvatar } from "@dicebear/core";
 import { micah } from "@dicebear/collection";
 import ListModal from "@/components/modals/list";
-import { Coin, TransactionStatus, TransactionType } from "@/enums/enums";
+import { Coin, Status, TransactionStatus, TransactionType } from "@/enums/enums";
 import ThemedView from "@/components/ThemedView";
 import ThemedText from "@/components/ThemedText";
-import ThemedSafeArea from "@/components/ThemeSafeArea";
 
 interface IProps { }
 
@@ -45,19 +56,13 @@ interface IState {
     progress: number;
     carosel_data: Array<ICaroselData>;
     trade: boolean;
+    trades: Array<IList>;
 }
 
 const { width } = Dimensions.get("window");
 export default class DashboardScreen extends React.Component<IProps, IState> {
     private session: UserData = sessionManager.getUserData();
     private avatar: any;
-    private readonly trades: IList[] = [
-        { name: 'Bitcoin', description: Coin.BTC, icon: "https://coin-images.coingecko.com/coins/images/1/large/bitcoin.png?1696501400" },
-        { name: 'Ethereum', description: Coin.ETH, icon: "https://coin-images.coingecko.com/coins/images/279/large/ethereum.png?1696501628" },
-        { name: 'Tether USDT', description: Coin.USDT, icon: "https://coin-images.coingecko.com/coins/images/325/large/Tether.png?1696501661" },
-        { name: 'USD Coin', description: Coin.USDC, icon: "https://coin-images.coingecko.com/coins/images/6319/large/usdc.png?1696506694" },
-        { name: 'Naira', description: Coin.NGN, icon: "https://img.icons8.com/emoji/96/nigeria-emoji.png" },
-    ];
 
     constructor(props: IProps) {
         super(props);
@@ -75,6 +80,7 @@ export default class DashboardScreen extends React.Component<IProps, IState> {
             trade: false,
             transactions: [],
             carosel_data: [],
+            trades: [],
             hide_balance: false,
             progress: 0,
         }
@@ -108,35 +114,35 @@ export default class DashboardScreen extends React.Component<IProps, IState> {
         const data: Array<ICaroselData> = [];
 
         !Boolean(isPhoneNumberVerified) && data.push({
-            action: "/", // "phoneinit",
+            action: "/dashboard", // "phoneinit",
             description: "Phone number not verirfied",
             title: "Verify your phone number to unlock unlimited possiblities",
             image: "https://api.dicebear.com/9.x/glass/png?radius=40&size=32&seed=Cryptocurrency&backgroundColor=4500ff,c0aede,4600ff",
         });
 
         !Boolean(twoFactorEnabled) && data.push({
-            action: "/",
+            action: "/dashboard",
             description: "Enable 2FA",
             title: "Secure your account and transactions, Enable 2FA to secure transaction",
             image: "https://api.dicebear.com/9.x/glass/png?radius=40&size=32&seed=Cryptocurrency&backgroundColor=6000ff,c0aede,6900ff",
         });
 
         String(biometricType) === "NONE" && data.push({
-            action: "/",
+            action: "/dashboard",
             description: "Enable Biometric",
             title: "Enable Biometric authentication for faster login",
             image: "https://api.dicebear.com/9.x/glass/png?radius=40&size=32&seed=Cryptocurrency&backgroundColor=5500ff,c0aede,5600ff&shape1=g",
         });
 
         (!passkey || passkey === undefined) && data.push({
-            action: '/', // "addpasskey",
+            action: '/passkey/new', // "addpasskey",
             description: "Enable Passkey",
             title: "Enable passkey authentication for faster login to your account",
             image: "https://api.dicebear.com/9.x/glass/png?radius=40&size=32&seed=Cryptocurrency&backgroundColor=6000ff,c0aede,6900ff",
         });
 
         data.push({
-            action: "/",
+            action: "/dashboard",
             description: "Unlock the Future",
             title: "Discover the Power of Cryptocurrency",
             image: "https://api.dicebear.com/9.x/glass/png?radius=40&size=32&seed=Cryptocurrency&backgroundColor=0000ff,c0aede,0000ff",
@@ -146,20 +152,23 @@ export default class DashboardScreen extends React.Component<IProps, IState> {
     };
 
     private loadLocalData = () => {
-        const { markets, transactions, } = this.session;
+        const { markets, transactions, hideBalance, totalBalanceNgn, totalBalanceUsd } = this.session;
+        const mkt: Array<IMarket> = Defaults.FILTER_MARKET(markets ? markets : [], ["USDC", 'USDT']);
+
+        const trades: Array<IList> = mkt.map((market, _index) => ({
+            name: market.name,
+            description: market.currency,
+            icon: market.icon,
+        }));
         this.setState({
             markets: markets ? markets : [],
             transactions: transactions ? transactions : [],
-            hide_balance: this.session.hideBalance || false,
+            hide_balance: hideBalance ? hideBalance : false,
+            totalBalanceNgn: totalBalanceNgn ? totalBalanceNgn : 0,
+            totalBalanceUsd: totalBalanceUsd ? totalBalanceUsd : 0,
+            trades: mkt.length > 0 ? trades : [],
         });
     }
-
-    private findMarket = (currency: string): IMarket => {
-        const { markets } = this.state;
-        const market: IMarket | undefined = markets.find(market => market.currency === currency);
-        if (!market) throw new Error('Market not found for symbol: ' + currency);
-        return market;
-    };
 
     private fetchMarkets = async () => {
         try {
@@ -186,27 +195,37 @@ export default class DashboardScreen extends React.Component<IProps, IState> {
 
             const data: IResponse = await res.json();
 
-            if (data.status === "error") throw new Error(data.message || data.error);
-            if (data.status === "success") {
-                if (!data.handshake) throw new Error('Unable to process login response right now, please try again.');
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
+                if (!data.handshake) throw new Error('Unable to process data right now, please try again.');
                 const parseData = Defaults.PARSE_DATA(data.data, this.session.client?.privateKey, data.handshake);
-                const mkt: Array<IMarket> = parseData.markets
+                const mkt: Array<IMarket> = Defaults.FILTER_MARKET(parseData.markets, ["USDC", 'USDT']);
+
+                const trades: Array<IList> = mkt.map((market, _index) => ({
+                    name: market.name,
+                    description: market.currency,
+                    icon: market.icon,
+                }));
 
                 this.setState({
                     transactions: parseData.transactions,
-                    markets: Defaults.FILTER_MARKET(parseData.markets, ["USDC", 'USDT']),
+                    markets: mkt,
                     totalBalanceUsd: parseData.totalBalanceUsd,
                     totalBalanceNgn: parseData.totalBalanceNgn,
+                    trades: trades,
                 });
 
                 await sessionManager.updateSession({
                     ...this.session,
-                    markets: mkt,
+                    markets: parseData.markets,
+                    transactions: parseData.transactions,
+                    totalBalanceNgn: parseData.totalBalanceNgn,
+                    totalBalanceUsd: parseData.totalBalanceUsd,
                 });
             };
 
-        } catch (error) {
-            console.error('Login failed:', error);
+        } catch (error: any) {
+            console.error('Error:', error.message);
         } finally {
             this.setState({ loading: false });
         }
@@ -275,19 +294,19 @@ export default class DashboardScreen extends React.Component<IProps, IState> {
 
     private processSelectedTrade = async (trade: IList) => {
         this.setState({ trade: false });
-        const market: IMarket = this.findMarket(trade.description);
-
-        const params: string = JSON.stringify(market);
-        router.navigate({ pathname: "/coin", params: { params } });
+        const market: IMarket = Defaults.FIND_MARKET(trade.description as Coin);
+        const params: IParams = { currency: market.currency, network: market.network };
+        await sessionManager.updateSession({ ...this.session, params: params });
+        router.navigate("/coin");
     }
 
     render(): React.ReactNode {
-        const { trade, fiat, loading, hide_balance, carosel_data, refreshing, markets, transactions, totalBalanceNgn, totalBalanceUsd } = this.state;
+        const { trade, fiat, trades, loading, hide_balance, carosel_data, refreshing, markets, transactions, totalBalanceNgn, totalBalanceUsd } = this.state;
         return (
             <>
                 <Stack.Screen options={{ title: 'Dashboard', headerShown: false }} />
-                <ThemedSafeArea style={[styles.safeAreaView, { backgroundColor: Colors.darkBlue }]}>
-                    <ThemedView style={[styles.header, { backgroundColor: Colors.darkBlue }]}>
+                <SafeAreaView style={[styles.safeAreaView, { backgroundColor: "#292662" }]}>
+                    <ThemedView style={[styles.header, { backgroundColor: "#292662" }]}>
                         <Image
                             style={{ width: 30, height: 30, borderWidth: 1, borderColor: "#757575", backgroundColor: "#EEEEEE", borderRadius: 360 }}
                             source={this.avatar.toDataUri()}
@@ -301,15 +320,10 @@ export default class DashboardScreen extends React.Component<IProps, IState> {
                             <Image
                                 source={require("../../assets/icons/chevron-left.svg")}
                                 tintColor="#ffffff"
-                                style={{ width: 25, height: 25, transform: [{ rotate: "270deg" }] }} />
+                                style={{ width: 20, height: 20, transform: [{ rotate: "90deg" }] }} />
                         </Pressable>
                         <View style={styles.headerIcons}>
-                            {loading &&
-                                <>
-                                    <ActivityIndicator size={16} color={"#FFF"} />
-                                    <ThemedText style={{ fontSize: 12 }}>updating...</ThemedText>
-                                </>
-                            }
+                            {loading && <ActivityIndicator size={16} color={"#FFF"} />}
                         </View>
                     </ThemedView>
                     <ThemedView style={[styles.mainContainer, { backgroundColor: Colors.darkBlue }]}>
@@ -415,15 +429,8 @@ export default class DashboardScreen extends React.Component<IProps, IState> {
                                                 <ThemedText style={styles.marketplaceLinkText}>Market Place</ThemedText>
                                                 <Image
                                                     source={require("../../assets/icons/chevron-left.svg")}
-                                                    style={{ width: 25, height: 25, transform: [{ rotate: "180deg" }] }} />
+                                                    style={{ width: 20, height: 20, }} />
                                             </Pressable>
-                                            {/**
-                                            {loading &&
-                                                <ThemedView style={{ backgroundColor: this.appreance === "dark" ? "#000" : "#FFF", borderRadius: 8, width: "100%", height: 300, flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                                                    <ActivityIndicator size={40} color={Colors.blue} />
-                                                </ThemedView>
-                                            }
-                                            */}
                                             {markets.length === 0 &&
                                                 <ThemedView style={{ backgroundColor: "#FFF", borderRadius: 8, width: "100%", height: 300, flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
                                                     <Image
@@ -447,7 +454,7 @@ export default class DashboardScreen extends React.Component<IProps, IState> {
                                                 <ThemedText style={styles.marketplaceLinkText}>Transaction History</ThemedText>
                                                 <Image
                                                     source={require("../../assets/icons/chevron-left.svg")}
-                                                    style={{ width: 25, height: 25, transform: [{ rotate: "180deg" }] }} />
+                                                    style={{ width: 20, height: 20 }} />
                                             </Pressable>
                                             {/**{loading &&
                                                 <View style={{ backgroundColor: this.appreance === "dark" ? "#000" : "#FFF", borderRadius: 8, width: "100%", height: 300, flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
@@ -479,10 +486,10 @@ export default class DashboardScreen extends React.Component<IProps, IState> {
                     </ThemedView>
                     <ListModal
                         visible={trade}
-                        lists={this.trades}
+                        lists={trades}
                         listChange={this.processSelectedTrade}
                         onClose={() => this.setState({ trade: !trade })} />
-                </ThemedSafeArea>
+                </SafeAreaView>
                 <StatusBar style='light' />
             </>
         )

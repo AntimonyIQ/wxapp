@@ -14,6 +14,7 @@ import Defaults from "../default/default";
 import ThemedView from "@/components/ThemedView";
 import ThemedText from "@/components/ThemedText";
 import ThemedSafeArea from "@/components/ThemeSafeArea";
+import { Status } from "@/enums/enums";
 
 interface IProps { }
 
@@ -48,34 +49,42 @@ export default class ConfirmPinScreen extends React.Component<IProps, IState> {
             await Defaults.IS_NETWORK_AVAILABLE();
             if (pin !== confirmPin.join("")) throw new Error("Pin does not match");
 
-            const res = await fetch(`${Defaults.API}/auth/create-user`, {
+            const res = await fetch(`${Defaults.API}/auth/register`, {
                 method: 'POST',
-                headers: { ...Defaults.HEADERS },
+                headers: {
+                    ...Defaults.HEADERS,
+                    'x-wealthx-handshake': this.session.client.publicKey,
+                    'x-wealthx-deviceid': this.session.deviceId,
+                    'x-wealthx-location': this.session.location,
+                },
                 body: JSON.stringify({
-                    phoneNumber: this.registration.phoneNumber,
                     country: this.registration.country,
+                    address: this.registration.country,
+                    email: this.registration.email,
                     dateOfBirth: this.registration.dateOfBirth,
-                    pin: this.registration.pin,
-                    pinConfirmation: this.registration.pin,
                     username: this.registration.username,
+                    pin: this.registration.pin,
+                    phoneNumber: this.registration.phoneNumber,
+                    referralCode: this.registration.referralCode,
                     fullName: this.registration.fullName,
-                    referralCode: this.registration.referralCode
                 }),
             });
 
-            // if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-
             const data = await res.json();
-            if (!data.status) throw new Error(data.message);
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
+                await sessionManager.updateSession({
+                    ...this.session,
+                    isRegistred: true,
+                    registration: {
+                        email: "",
+                        password: "",
+                        countryCode: ""
+                    }
+                });
+                router.navigate("/register/success");
+            };
 
-            this.setState({ loading: false });
-
-            await sessionManager.updateSession({
-                ...this.session,
-                registration: {}
-            });
-
-            router.navigate("/register/success");
         } catch (error: any) {
             logger.error(error.message);
             Toast.show({
@@ -180,11 +189,9 @@ export default class ConfirmPinScreen extends React.Component<IProps, IState> {
                     </ThemedView>
                     <ThemedView style={styles.keypadContainer}>
                         <ThemedView style={{ width: '100%', paddingHorizontal: 16, marginBottom: 30 }}>
-                            {confirmPin ? (
-                                <PrimaryButton Gradient title={'Continue'} onPress={this.handlePin} />
-                            ) : (
-                                <PrimaryButton onPress={() => { }} title={'Continue'} />
-                            )}
+                            {(confirmPin.join('') && confirmPin.join('').length === 4)
+                                ? <PrimaryButton Gradient title={'Continue'} onPress={this.handlePin} />
+                                : <PrimaryButton Grey onPress={() => { }} title={'Continue'} />}
                         </ThemedView>
                         <FlatList
                             data={[1, 2, 3, 4, 5, 6, 7, 8, 9, '.', 0, 'Backspace']}

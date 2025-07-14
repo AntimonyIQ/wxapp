@@ -1,7 +1,7 @@
 import React from 'react';
 import { Modal, ActivityIndicator, StyleSheet, } from 'react-native';
-import { ThemedView } from '../ThemedView';
 import { Colors } from '@/constants/Colors';
+import ThemedView from '../ThemedView';
 
 interface IProps {
     loading: boolean;
@@ -16,11 +16,11 @@ export default class LoadingModal extends React.Component<IProps, {}> {
                 transparent={true}
                 animationType='none'
                 visible={loading}
-                onRequestClose={() => {}}
+                onRequestClose={() => { }}
             >
                 <ThemedView style={styles.modalBackground}>
                     <ThemedView style={styles.activityIndicatorWrapper}>
-                        <ActivityIndicator animating={loading} size="large" color={Colors.blue} />
+                        <ActivityIndicator animating={loading} size="large" color={Colors.white} />
                     </ThemedView>
                 </ThemedView>
             </Modal>
@@ -42,5 +42,6 @@ const styles = StyleSheet.create({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
+        backgroundColor: "black"
     }
 });

@@ -10,20 +10,18 @@ import {
     View,
 } from 'react-native';
 import React from 'react';
-import { IList } from '@/interface/interface';
-import { ThemedView } from '../ThemedView';
-import { ThemedText } from '../ThemedText';
+import { IMarket } from '@/interface/interface';
+import ThemedView from '../ThemedView';
+import ThemedText from '../ThemedText';
 
 interface SwapInputProps {
     onChangeCoin: () => void;
     onMaxPress: () => void;
-    currency: IList;
+    asset: IMarket;
     onChangeText: (text: string) => void;
-    balance: number;
     value: string;
     onFocus: (e: NativeSyntheticEvent<TextInputFocusEventData>) => void;
     readOnly: boolean;
-    price: number;
 }
 
 export default class SwapTextField extends React.Component<SwapInputProps> {
@@ -33,7 +31,7 @@ export default class SwapTextField extends React.Component<SwapInputProps> {
     }
 
     render() {
-        const { onChangeCoin, currency, price, balance, onMaxPress, onChangeText, value, onFocus, readOnly } = this.props;
+        const { onChangeCoin, asset, onMaxPress, onChangeText, value, onFocus, readOnly } = this.props;
 
         return (
             <ThemedView style={styles.container}>
@@ -51,15 +49,15 @@ export default class SwapTextField extends React.Component<SwapInputProps> {
                         enablesReturnKeyAutomatically={false}
                     />
                     <ThemedText style={styles.priceText}>
-                        {price.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+                        {(Number(value) * asset.price).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
                     </ThemedText>
                 </View>
                 <View>
                     <View style={styles.currencyContainer}>
                         <Pressable onPress={onChangeCoin} style={styles.currencyButton}>
-                            <Image source={{ uri: currency.icon }} style={styles.currencyIcon} />
+                            <Image source={{ uri: asset.icon }} style={styles.currencyIcon} />
                             <ThemedText style={styles.currencyText}>
-                                {currency.description}
+                                {asset.currency}
                             </ThemedText>
                             <Image
                                 source={require("../../assets/icons/chevron-left-white.svg")}
@@ -68,7 +66,7 @@ export default class SwapTextField extends React.Component<SwapInputProps> {
                         </Pressable>
                         <View style={styles.balanceContainer}>
                             <ThemedText style={styles.balanceText}>
-                                Balance: {balance}
+                                Balance: {asset.balance}
                             </ThemedText>
                             <Pressable style={styles.maxButton} onPress={onMaxPress}>
                                 <ThemedText style={{ fontFamily: 'AeonikRegular', fontSize: 12 }}>Max</ThemedText>
@@ -128,7 +126,7 @@ const styles = StyleSheet.create({
     chevronIcon: {
         height: 14,
         width: 14,
-        transform: [{ rotate: "270deg"}]
+        transform: [{ rotate: "270deg" }]
     },
     balanceContainer: {
         flexDirection: 'row',

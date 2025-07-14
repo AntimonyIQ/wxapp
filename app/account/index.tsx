@@ -1,3 +1,15 @@
+// This is part for the Wealthx Mobile Application.
+// Copyright © 2023 WealthX. All rights reserved.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// http://www.apache.org/licenses/LICENSE-2.0
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 import React from "react";
 import sessionManager from "@/session/session";
 import logger from "@/logger/logger";
@@ -11,6 +23,7 @@ import { micah } from "@dicebear/collection";
 import ThemedView from "@/components/ThemedView";
 import ThemedText from "@/components/ThemedText";
 import ThemedSafeArea from "@/components/ThemeSafeArea";
+import { StatusBar } from "expo-status-bar";
 
 interface IProps { }
 
@@ -44,9 +57,15 @@ export default class AccountScreen extends React.Component<IProps, IState> {
                     style={{ fontFamily: 'AeonikRegular', fontSize: 14, lineHeight: 16, color: '#757575', }}>
                     {list.name}
                 </ThemedText>
-                <ThemedText style={{ fontFamily: 'AeonikMedium', fontSize: 14, lineHeight: 16, }} >
-                    {list.description}
-                </ThemedText>
+                <ThemedView style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <ThemedText style={{ fontFamily: 'AeonikMedium', fontSize: 14, lineHeight: 16, }} >{list.description === "Yes" ? "Verified" : list.description === "No" ? "Not Verified" : list.description}</ThemedText>
+                    {list.description === "Yes"
+                        ? <Image source={require('../../assets/icons/verification.svg')} style={{ width: 24, height: 24 }} tintColor={Colors.blue} />
+                        : list.description === "No"
+                            ? <Image source={require('../../assets/icons/verification.svg')} style={{ width: 24, height: 24 }} tintColor={Colors.grey} />
+                            : null
+                    }
+                </ThemedView>
             </ThemedView>
         );
     }
@@ -78,7 +97,7 @@ export default class AccountScreen extends React.Component<IProps, IState> {
                                 source={this.avatar.toDataUri()} />
                             <ThemedView style={styles.userInfo}>
                                 <ThemedText style={styles.userName}>{this.user.fullName}</ThemedText>
-                                <ThemedText style={styles.userUsername}>{this.user.username}</ThemedText>
+                                <ThemedText style={styles.userUsername}>@{this.user.username}</ThemedText>
                             </ThemedView>
                         </ThemedView>
                         <ThemedView style={styles.detailsContainer}>
@@ -86,10 +105,11 @@ export default class AccountScreen extends React.Component<IProps, IState> {
                                 <this.DescriptionView name={'Full Name'} description={this.user.fullName} />
                                 <this.DescriptionView name={'Phone Number'} description={this.user.phoneNumber} />
                                 <this.DescriptionView name={'Email Address'} description={this.user.email} />
-                                <this.DescriptionView name={'Date of Birth'} description={this.user.dateOfBirth} />
+                                <this.DescriptionView name={'Verification Complete'} description={this.user.isVerificationComplete ? "Yes" : "No"} />
                             </ThemedView>
                         </ThemedView>
                     </ThemedView>
+                    <StatusBar style="dark" />
                 </ThemedSafeArea>
             </>
         );
@@ -111,7 +131,7 @@ const styles = StyleSheet.create({
     backButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: Appearance.getColorScheme() === "dark" ? "#000000" : '#f7f7f7',
+        backgroundColor: '#f7f7f7',
         borderRadius: 99,
         paddingVertical: 5,
         paddingRight: 20,
@@ -163,7 +183,7 @@ const styles = StyleSheet.create({
         padding: 8,
         borderRadius: 12,
         gap: 8,
-        backgroundColor: Appearance.getColorScheme() === "dark" ? '#0a0a0a' : '#F7F7F7',
+        backgroundColor: '#F7F7F7',
     },
     deleteButton: {
         paddingHorizontal: 12,

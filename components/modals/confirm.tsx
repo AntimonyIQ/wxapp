@@ -14,31 +14,30 @@ interface IConfirm {
     visible: boolean;
     onConfirm: () => void;
     onClose: () => void;
-    list?: Array<IList>;
+    list?: Array<Partial<IList>>;
     amount: string;
     dollarEquiv: number;
     title?: string;
     message?: string;
+    asset: IMarket;
 }
 
 export default class ConfirmModal extends React.Component<IConfirm> {
     private session: UserData = sessionManager.getUserData();
     private appreance: ColorSchemeName = Appearance.getColorScheme();
-    private coin: IMarket;
     constructor(props: IConfirm) {
         super(props);
         if (!this.session || !this.session.isLoggedIn) {
             logger.log("Session not found. Redirecting to login screen.");
             router.navigate("/");
         };
-        this.coin = this.session.selectedCoin;
     }
 
     componentDidMount() { logger.clear(); }
 
     private formatToMoneyString = (money: number) => {
-        const { currency } = this.coin;
-        if (currency === Coin.USDT || currency === Coin.USDC) {
+        const { asset } = this.props;
+        if (asset.currency === Coin.USDT || asset.currency === Coin.USDC) {
             return Number(money.toFixed(2)).toLocaleString(undefined, {
                 minimumFractionDigits: Defaults.MIN_DECIMAL,
                 maximumFractionDigits: Defaults.MIN_DECIMAL
@@ -52,7 +51,7 @@ export default class ConfirmModal extends React.Component<IConfirm> {
     }
 
     render() {
-        const { currency } = this.coin;
+        const { asset } = this.props;
         const { visible, onClose, onConfirm, list, dollarEquiv, amount, title, message } = this.props;
         return (
             <>
@@ -85,7 +84,7 @@ export default class ConfirmModal extends React.Component<IConfirm> {
                                     <ThemedView style={styles.confirmContainer}>
                                         <ThemedView style={{ alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 5 }}>
                                             <ThemedText style={{ color: this.appreance === "dark" ? "#c7c7c7" : "#757575", fontSize: 12, fontFamily: 'AeonikRegular' }}>{message ? message : "You are about to send"}</ThemedText>
-                                            <ThemedText style={{ fontSize: 32, lineHeight: 32, fontFamily: 'AeonikMedium' }}>{amount} {currency}</ThemedText>
+                                            <ThemedText style={{ fontSize: 32, lineHeight: 32, fontFamily: 'AeonikMedium' }}>{amount} {asset.currency}</ThemedText>
                                             <ThemedText style={{ color: this.appreance === "dark" ? "#c7c7c7" : "#757575", fontSize: 12, fontFamily: 'AeonikRegular' }}>${this.formatToMoneyString(dollarEquiv)}</ThemedText>
                                         </ThemedView>
                                         <ThemedView style={{ backgroundColor: this.appreance === "dark" ? '#333333' : '#F7F7F7', borderRadius: 12, width: '100%', padding: 13, flexDirection: 'column', alignItems: 'flex-start', gap: 16 }}>
@@ -127,6 +126,7 @@ const styles = StyleSheet.create({
         bottom: 0,
         borderTopRightRadius: 20,
         borderTopLeftRadius: 20,
+        backgroundColor: "#FFFFFF"
     },
     header: {
         padding: 16,
@@ -144,12 +144,12 @@ const styles = StyleSheet.create({
         right: 0,
         padding: 4,
         borderRadius: 100,
-        backgroundColor: Appearance.getColorScheme() === "dark" ? '#0a0a0a' : '#E8E8E8',
+        backgroundColor: '#E8E8E8',
     },
     separator: {
         width: '100%',
         height: 1,
-        backgroundColor: Appearance.getColorScheme() === "dark" ? '#202020' : '#E8E8E8',
+        backgroundColor: '#E8E8E8',
     },
     confirmContainer: {
         width: '100%',

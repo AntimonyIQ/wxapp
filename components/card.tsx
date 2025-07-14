@@ -1,15 +1,18 @@
 import React from 'react';
 import { Appearance, ColorSchemeName, Image, Pressable, StyleSheet } from 'react-native';
-import { IMarket } from '@/interface/interface';
+import { IMarket, IParams, UserData } from '@/interface/interface';
 import { router } from 'expo-router';
 import ThemedView from './ThemedView';
 import ThemedText from './ThemedText';
+import Defaults from '@/app/default/default';
+import sessionManager from '@/session/session';
 
 export interface ICard {
     item: IMarket;
 }
 
 class Card extends React.Component<ICard> {
+    private session: UserData = sessionManager.getUserData();
     private appreance: ColorSchemeName = Appearance.getColorScheme();
     constructor(props: ICard) {
         super(props);
@@ -24,8 +27,11 @@ class Card extends React.Component<ICard> {
     }
 
     private handleSelectedCoin = async () => {
-        const params: string = JSON.stringify(this.props.item);
-        router.navigate({ pathname: "/coin", params: { params } });
+        const { item } = this.props;
+        const market: IMarket = Defaults.FIND_MARKET(item.currency, item.network);
+        const params: IParams = { currency: market.currency, network: market.network };
+        await sessionManager.updateSession({ ...this.session, params: params });
+        router.navigate("/coin");
     }
 
     render() {

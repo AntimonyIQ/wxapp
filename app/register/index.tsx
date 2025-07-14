@@ -1,3 +1,15 @@
+// This is part for the Wealthx Mobile Application.
+// Copyright © 2023 WealthX. All rights reserved.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// http://www.apache.org/licenses/LICENSE-2.0
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 import React from "react";
 import sessionManager from "@/session/session";
 import { IRegistration, UserData } from "@/interface/interface";
@@ -24,10 +36,9 @@ interface IProps { }
 interface IState {
     loading: boolean;
     country: string;
+    countryCode: string;
     referralCode: string;
     referralFocused: boolean;
-    fullName: string;
-    fullNameFocused: boolean;
     dateOfBirth: string;
     dateOfBirthFocused: boolean;
     phoneNumber: string;
@@ -47,10 +58,9 @@ export default class RegisterScreen extends React.Component<IProps, IState> {
         this.state = {
             loading: false,
             country: '',
+            countryCode: '',
             referralCode: '',
             referralFocused: false,
-            fullName: '',
-            fullNameFocused: false,
             dateOfBirth: '',
             dateOfBirthFocused: false,
             phoneNumber: '',
@@ -61,9 +71,6 @@ export default class RegisterScreen extends React.Component<IProps, IState> {
             phones: [],
         }
 
-        if (!this.session) {
-            logger.log("Session not found. Redirecting to login screen.");
-        }
         this.registration = this.session.registration;
     }
 
@@ -89,8 +96,8 @@ export default class RegisterScreen extends React.Component<IProps, IState> {
 
     private handleUserDetails = async (): Promise<void> => {
         try {
-            const { country, referralCode, fullName, dateOfBirth, phoneNumber } = this.state;
-            if (!country || !fullName || !dateOfBirth || !phoneNumber) throw new Error('All fields are required');
+            const { country, referralCode, dateOfBirth, phoneNumber, countryCode } = this.state;
+            if (!country || !dateOfBirth || !phoneNumber) throw new Error('All fields are required');
 
             this.setState({ loading: true });
 
@@ -98,9 +105,9 @@ export default class RegisterScreen extends React.Component<IProps, IState> {
                 ...this.registration,
                 country,
                 referralCode,
-                fullName,
                 dateOfBirth,
-                phoneNumber
+                phoneNumber,
+                countryCode
             };
 
             await sessionManager.updateSession({ ...this.session, registration });
@@ -114,7 +121,7 @@ export default class RegisterScreen extends React.Component<IProps, IState> {
     }
 
     render(): React.ReactNode {
-        const { loading, country, lists, phones, list_modal, dobmodal, referralCode, fullName, dateOfBirth, phoneNumber, fullNameFocused, referralFocused } = this.state;
+        const { loading, country, lists, phones, list_modal, dobmodal, referralCode, dateOfBirth, phoneNumber, referralFocused } = this.state;
         return (
             <>
                 <Stack.Screen options={{ title: this.title, headerShown: false }} />
@@ -133,18 +140,17 @@ export default class RegisterScreen extends React.Component<IProps, IState> {
                             <TextField
                                 placeholder={'Full Name'}
                                 title={'Full Name'}
-                                showText={fullNameFocused}
-                                onFocus={() => this.setState({ list_modal: false, fullNameFocused: true, referralFocused: false, dateOfBirthFocused: false, phoneNumberFocused: false })}
-                                textValue={fullName}
-                                onChangeText={(text) => this.setState({ fullName: text })}
-                                onClear={() => this.setState({ fullName: '' })}
-                                onBlur={() => this.setState({ fullNameFocused: false, referralFocused: false, dateOfBirthFocused: false, phoneNumberFocused: false })}
+                                showText={false}
+                                textValue={this.registration.fullName || ""}
+                                onChangeText={(text) => { }}
+                                readonly={true}
                             />
 
                             <TextField
                                 placeholder={'Email Address'}
                                 title={'Email Address'}
-                                textValue={this.registration?.email || ""}
+                                showText={false}
+                                textValue={this.registration.email || ""}
                                 onChangeText={(text) => { }}
                                 readonly={true}
                             />
@@ -153,6 +159,7 @@ export default class RegisterScreen extends React.Component<IProps, IState> {
                                 <PhoneField
                                     placeholder='Phone Number'
                                     maxLength={20}
+                                    getCode={(code) => this.setState({ countryCode: code })}
                                     textValue={phoneNumber}
                                     onChangeText={(text): void => this.setState({ phoneNumber: text })}
                                     showPasteButton={false}
@@ -179,10 +186,10 @@ export default class RegisterScreen extends React.Component<IProps, IState> {
                             <ThemedView style={{ flex: 1 }}>
                                 <TextField
                                     showText={referralFocused}
-                                    onFocus={() => this.setState({ list_modal: false, referralFocused: true, fullNameFocused: false, dateOfBirthFocused: false, phoneNumberFocused: false })}
+                                    onFocus={() => this.setState({ list_modal: false, referralFocused: true, dateOfBirthFocused: false, phoneNumberFocused: false })}
                                     textValue={referralCode}
                                     onChangeText={(text) => this.setState({ referralCode: text })}
-                                    onBlur={() => this.setState({ referralFocused: false, fullNameFocused: false, dateOfBirthFocused: false, phoneNumberFocused: false })}
+                                    onBlur={() => this.setState({ referralFocused: false, dateOfBirthFocused: false, phoneNumberFocused: false })}
                                     onClear={() => this.setState({ referralCode: '' })}
                                     placeholder={'Referral Code (Optional)'}
                                     title={'Referral Code'}
@@ -190,9 +197,9 @@ export default class RegisterScreen extends React.Component<IProps, IState> {
                             </ThemedView>
 
                             <ThemedView style={{ marginTop: 34, marginBottom: 100 }}>
-                                {fullName.length > 0
+                                {(country && phoneNumber && dateOfBirth)
                                     ? <PrimaryButton Gradient title={'Continue'} onPress={this.handleUserDetails} />
-                                    : <PrimaryButton onPress={() => { }} title={'Continue'} />
+                                    : <PrimaryButton Grey disabled onPress={() => { }} title={'Continue'} />
                                 }
                             </ThemedView>
 
@@ -210,6 +217,7 @@ export default class RegisterScreen extends React.Component<IProps, IState> {
                         onCancel={() => this.setState({ dobmodal: !dobmodal })}
                         onConfirm={(value) => this.setState({ dateOfBirth: value, dobmodal: !dobmodal })}
                         visible={dobmodal} />
+
                     {list_modal &&
                         <ListModal
                             visible={list_modal}
@@ -231,7 +239,7 @@ const styles = StyleSheet.create({
     },
     loginPressable: {
         position: 'absolute',
-        bottom: 0,
+        bottom: 20,
         alignItems: 'center',
         alignSelf: 'center',
         justifyContent: 'center',

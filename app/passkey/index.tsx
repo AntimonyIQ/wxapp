@@ -1,6 +1,18 @@
+// This is part for the Wealthx Mobile Application.
+// Copyright © 2023 WealthX. All rights reserved.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// http://www.apache.org/licenses/LICENSE-2.0
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 import React from "react";
 import sessionManager from "@/session/session";
-import { UserData } from "@/interface/interface";
+import { IResponse, IUser, UserData } from "@/interface/interface";
 import logger from "@/logger/logger";
 import { router, Stack } from "expo-router";
 import { FlatList, Platform, StyleSheet, TextInput, TouchableOpacity } from "react-native";
@@ -11,6 +23,7 @@ import LoadingModal from "@/components/modals/loading";
 import ThemedText from "@/components/ThemedText";
 import ThemedSafeArea from "@/components/ThemeSafeArea";
 import ThemedView from "@/components/ThemedView";
+import { Status } from "@/enums/enums";
 
 interface IProps { }
 
@@ -28,66 +41,71 @@ export default class PasskeyScreen extends React.Component<IProps, IState> {
     constructor(props: IProps) {
         super(props);
         this.state = { passcode: Array(4).fill(""), loading: false, messageError: false, message: "" };
-        if (!this.session) {
-            logger.log("Session not found. Redirecting to login screen.");
-        }
     }
 
     private processLoginRefresh = async () => {
         const { passcode } = this.state;
 
-        const isConn = await Defaults.IS_NETWORK_AVAILABLE();
-        console.log("is connection available: ", isConn);
-
-        if (!passcode) {
-            this.setState({ message: "Your pin is wrong please try again", messageError: true });
-            return;
-        };
-
         try {
             this.setState({ loading: true });
-            const session = sessionManager.getUserData();
+            await Defaults.IS_NETWORK_AVAILABLE();
 
-            const payload = JSON.stringify({
-                passkey: passcode.join(""),
-                refreshToken: session.refreshToken,
+            if (!passcode.join("") && passcode.join("").length < 4) {
+                this.setState({ message: "Your pin is wrong please try again", messageError: true });
+                return;
+            };
+
+            const res = await fetch(`${Defaults.API}/auth/passkey`, {
+                method: 'POST',
+                headers: {
+                    ...Defaults.HEADERS,
+                    'x-wealthx-handshake': this.session.client.publicKey,
+                    'x-wealthx-deviceid': this.session.deviceid,
+                    'x-wealthx-devicename': this.session.devicename,
+                },
+                body: JSON.stringify({ passkey: passcode.join(""), refreshToken: this.session.user?.refreshToken }),
             });
 
-            logger.log("refreshToken: ", session.refreshToken);
+            const data: IResponse = await res.json();
 
-            const response = await fetch(`${Defaults.API}/auth/refresh/v3`, {
-                method: "POST",
-                headers: { ...Defaults.HEADERS, Cookie: `jwt=${session.refreshToken}`, },
-                body: payload,
-            });
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
+                if (!data.handshake) throw new Error('Unable to process login response right now, please try again.');
+                const parseData = Defaults.PARSE_DATA(data.data, this.session.client.privateKey, data.handshake);
+                const authorization = parseData.authorization;
 
-            const data = await response.json();
-            logger.log("Response Data: ", data);
-            const { accessToken, refreshToken, expiresIn } = data;
+                const res = await fetch(`${Defaults.API}/user`, {
+                    method: 'GET',
+                    headers: {
+                        ...Defaults.HEADERS,
+                        'x-wealthx-handshake': this.session.client.publicKey,
+                        'x-wealthx-deviceid': this.session.deviceid,
+                        Authorization: `Bearer ${authorization}`,
+                    },
+                });
 
-            if (!accessToken) throw new Error('Access token not found in response');
+                const userdata: IResponse = await res.json();
+                if (userdata.status === Status.ERROR) throw new Error(userdata.message || userdata.error);
+                if (userdata.status === Status.SUCCESS) {
+                    if (!userdata.handshake) throw new Error('Unable to process login response right now, please try again.');
+                    const userParseData: IUser = Defaults.PARSE_DATA(userdata.data, this.session.client.privateKey, userdata.handshake);
+                    await sessionManager.updateSession({
+                        ...this.session,
+                        isRegistred: true,
+                        authorization: authorization,
+                        isLoggedIn: true,
+                        user: userParseData,
+                    });
 
-            logger.log("accessToken: ", accessToken);
+                    if (userParseData.isSuspended === true) {
+                        router.navigate('/suspend');
+                    } else {
+                        router.navigate('/dashboard');
+                    }
 
-            const userResponse = await fetch(`${Defaults.API}/users/`, {
-                method: 'GET',
-                headers: { ...Defaults.HEADERS, 'Authorization': `Bearer ${accessToken}`, }
-            });
-
-            if (!userResponse.ok) { throw new Error(`HTTP error! status: ${userResponse.status}`); }
-
-            const userData = await userResponse.json();
-
-            await sessionManager.updateSession({
-                ...session,
-                accessToken,
-                refreshToken,
-                expiresIn,
-                isLoggedIn: true,
-                user: userData.data?.user,
-            });
-
-            router.navigate("/dashboard");
+                    return;
+                }
+            };
 
         } catch (error: any) {
             if (error.response) {
@@ -131,8 +149,12 @@ export default class PasskeyScreen extends React.Component<IProps, IState> {
     };
 
     private signout = async () => {
-        await sessionManager.logout();
-        router.replace('/');
+        await sessionManager.updateSession({
+            ...this.session,
+            isLoggedIn: false,
+            authorization: "",
+        });
+        router.dismissTo("/onboarding/login");
     }
 
     private renderInputItem = ({ item, index }: { item: string, index: number }): React.JSX.Element => {
@@ -321,7 +343,7 @@ const styles = StyleSheet.create({
     },
     buttonText: {
         fontSize: 32,
-        lineHeight: 32,
+        lineHeight: 38,
         fontFamily: 'AeonikMedium',
     },
 });

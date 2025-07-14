@@ -8,12 +8,12 @@ import {
     KeyboardTypeOptions,
     Appearance,
 } from 'react-native';
-import { ThemedView } from '../ThemedView';
-import { ThemedText } from '../ThemedText';
 import { Image } from 'expo-image';
 import * as Clipboard from 'expo-clipboard';
 import { IList } from "@/interface/interface";
 import ListModal from "@/components/modals/list";
+import ThemedView from '../ThemedView';
+import ThemedText from '../ThemedText';
 
 interface IProps {
     placeholder?: string;
@@ -32,7 +32,7 @@ interface IProps {
     readonly?: boolean;
     disable?: boolean;
     maxLength?: number;
-    getCode?: (code: string) => string;
+    getCode?: (code: string) => void;
     lists?: Array<IList>;
 }
 
@@ -114,10 +114,10 @@ export default class PhoneField extends React.Component<IProps, IState> {
                 <ThemedView style={styles.inputContainer}>
                     <Pressable style={{ flexDirection: "row", alignItems: "center" }} onPress={(): void => this.setState({ list_modal: true })}>
                         <ThemedText>{code}</ThemedText>
-                        <Image 
+                        <Image
                             source={require("../../assets/icons/chevron-left.svg")}
                             style={{ width: 26, height: 26, transform: [{ rotate: '270deg' }] }}
-                            tintColor={this.appreance === "dark" ? "#FFF" : "#000"}/>
+                            tintColor={this.appreance === "dark" ? "#FFF" : "#000"} />
                     </Pressable>
                     <TextInput
                         style={styles.input}
@@ -155,7 +155,7 @@ export default class PhoneField extends React.Component<IProps, IState> {
                 </ThemedView>
                 <ListModal
                     visible={list_modal}
-                    listChange={(list) => this.setState({ list_modal: false, code: list.description })}
+                    listChange={(list) => this.setState({ list_modal: false, code: list.description }, this.getCountryCode)}
                     onClose={() => this.setState({ list_modal: !list_modal })}
                     lists={lists || []}
                     showSearch={true} />

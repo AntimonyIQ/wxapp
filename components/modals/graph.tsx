@@ -1,17 +1,17 @@
-import React from 'react';
-import { Modal, StyleSheet, TouchableWithoutFeedback, Appearance, Pressable, ColorSchemeName, ActivityIndicator, Dimensions } from 'react-native';
+import { Colors } from '@/constants/Colors';
+import { Coin } from '@/enums/enums';
 import { IMarket } from '@/interface/interface';
 import logger from '@/logger/logger';
 import { Image } from 'expo-image';
-import { Colors } from '@/constants/Colors';
+import React from 'react';
+import { ActivityIndicator, Dimensions, Modal, Pressable, StyleSheet, TouchableWithoutFeedback } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
-import { Coin } from '@/enums/enums';
-import ThemedView from '../ThemedView';
 import ThemedText from '../ThemedText';
+import ThemedView from '../ThemedView';
 
 interface GraphDialogProps {
     visible: boolean;
-    currency: IMarket;
+    asset: IMarket;
     onClose: () => void;
 }
 
@@ -22,8 +22,6 @@ interface GraphDialogState {
 }
 
 export default class GraphModal extends React.Component<GraphDialogProps, GraphDialogState> {
-    private appearance: ColorSchemeName = Appearance.getColorScheme();
-
     constructor(props: GraphDialogProps) {
         super(props);
         this.state = { loading: true, chartData: [], labels: [] };
@@ -37,7 +35,7 @@ export default class GraphModal extends React.Component<GraphDialogProps, GraphD
         try {
             this.setState({ loading: true });
 
-            const symbol: Coin = this.props.currency.currency as Coin;
+            const symbol: Coin = this.props.asset.currency as Coin;
             const id: string = this.getCoinGeckoId(symbol);
             if (!id) throw new Error("Unsupported coin symbol");
 
@@ -82,7 +80,7 @@ export default class GraphModal extends React.Component<GraphDialogProps, GraphD
     }
 
     render(): React.ReactNode {
-        const { visible, onClose, currency } = this.props;
+        const { visible, onClose, asset } = this.props;
         const { loading, chartData, labels } = this.state;
         const screenWidth = Dimensions.get("window").width;
 
@@ -94,12 +92,12 @@ export default class GraphModal extends React.Component<GraphDialogProps, GraphD
                             <ThemedView style={styles.dialogContainer}>
                                 <ThemedView style={styles.header}>
                                     <ThemedView style={styles.headerIconPlaceholder} />
-                                    <ThemedText style={styles.headerText}>{currency.currency} Overview</ThemedText>
+                                    <ThemedText style={styles.headerText}>{asset.currency} Overview</ThemedText>
                                     <Pressable onPress={onClose}>
                                         <Image
                                             source={require("../../assets/icons/close.svg")}
                                             style={{ width: 24, height: 24 }}
-                                            tintColor={this.appearance === "dark" ? "#FFF" : "#000"} />
+                                            tintColor={"#fff"} />
                                     </Pressable>
                                 </ThemedView>
 
@@ -115,7 +113,7 @@ export default class GraphModal extends React.Component<GraphDialogProps, GraphD
                                             height={200}
                                             yAxisLabel="$"
                                             chartConfig={{
-                                                backgroundColor: "transparent",
+                                                backgroundColor: "white",
                                                 backgroundGradientFrom: "transparent",
                                                 backgroundGradientTo: "transparent",
                                                 decimalPlaces: 2,
@@ -152,6 +150,7 @@ const styles = StyleSheet.create({
         padding: 20,
         borderRadius: 10,
         alignItems: "flex-start",
+        backgroundColor: "#000"
     },
     header: {
         flexDirection: 'row',
@@ -163,6 +162,7 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontFamily: 'AeonikMedium',
         lineHeight: 20,
+        color: "white"
     },
     headerIconPlaceholder: {
         height: 24,

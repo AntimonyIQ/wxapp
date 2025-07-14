@@ -1,14 +1,14 @@
 
 import React from 'react';
 import { Modal, StyleSheet, TouchableWithoutFeedback, Appearance, Pressable, ColorSchemeName } from 'react-native';
-import { ThemedView } from '../ThemedView';
-import { ThemedText } from '../ThemedText';
 import { Image } from 'expo-image';
 import ListButton from '../button/list';
 import { IList } from '@/interface/interface';
 import logger from '@/logger/logger';
 import TextField from '../inputs/text';
 import { FlatList } from "react-native";
+import ThemedView from '../ThemedView';
+import ThemedText from '../ThemedText';
 
 interface ListProps {
     visible: boolean;
@@ -24,7 +24,6 @@ interface ListState {
 }
 
 export default class ListModal extends React.Component<ListProps, ListState> {
-    private appreance: ColorSchemeName = Appearance.getColorScheme();
     private PAGE_SIZE = 20;
 
     constructor(props: ListProps) {
@@ -78,7 +77,7 @@ export default class ListModal extends React.Component<ListProps, ListState> {
                                         <Image
                                             source={require("../../assets/icons/close.svg")}
                                             style={{ width: 24, height: 24 }}
-                                            tintColor={this.appreance === "dark" ? "#FFF" : "#000"} />
+                                            tintColor={"#000"} />
                                     </Pressable>
                                 </ThemedView>
                                 {showSearch && (
@@ -134,6 +133,7 @@ const styles = StyleSheet.create({
         elevation: 5,
         marginBottom: 20,
         maxHeight: "80%",
+        backgroundColor: "#fff",
     },
     header: {
         flexDirection: 'row',

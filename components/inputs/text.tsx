@@ -1,19 +1,17 @@
 import { Colors } from '@/constants/Colors';
 import React from 'react';
 import {
-    Text,
     TextInput,
     Pressable,
     StyleSheet,
     Vibration,
     KeyboardTypeOptions,
     Appearance,
-    Platform,
 } from 'react-native';
-import { ThemedView } from '../ThemedView';
-import { ThemedText } from '../ThemedText';
 import { Image } from 'expo-image';
 import * as Clipboard from 'expo-clipboard';
+import ThemedText from '../ThemedText';
+import ThemedView from '../ThemedView';
 
 interface IProps {
     placeholder?: string;
@@ -112,7 +110,7 @@ export default class TextField extends React.Component<IProps, IState> {
                         secureTextEntry={secureTextEntry && !toggleEye}
                         onPressIn={onPress}
                         keyboardType={keyboardType}
-                        editable={!readonly &&!disable}
+                        editable={!readonly && !disable}
                         maxLength={maxLength}
                     />
                     {showText && !showPasteButton && (
@@ -152,7 +150,7 @@ const styles = StyleSheet.create({
         paddingBottom: 6,
         fontFamily: 'AeonikRegular',
         fontSize: 10,
-        color: Appearance.getColorScheme() === "dark"? Colors.dark.text : Colors.light.text,
+        color: Appearance.getColorScheme() === "dark" ? Colors.dark.text : Colors.light.text,
         lineHeight: 12,
     },
     inputContainer: {
@@ -165,7 +163,7 @@ const styles = StyleSheet.create({
         flex: 1,
         fontFamily: 'AeonikMedium',
         fontSize: 16,
-        color: Appearance.getColorScheme() === "dark"? Colors.dark.text : Colors.light.text,
+        color: Appearance.getColorScheme() === "dark" ? Colors.dark.text : Colors.light.text,
         backgroundColor: Appearance.getColorScheme() === "dark" ? "#000" : "#F7f7f7",
         outlineColor: 'transparent',
         paddingVertical: 10,

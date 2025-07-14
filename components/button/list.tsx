@@ -1,7 +1,7 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View, Image, Appearance } from 'react-native';
-import { ThemedView } from '../ThemedView';
-import { ThemedText } from '../ThemedText';
+import { Pressable, StyleSheet, Image, Appearance } from 'react-native';
+import ThemedView from '../ThemedView';
+import ThemedText from '../ThemedText';
 
 interface IListBtnProps {
     icon: string;

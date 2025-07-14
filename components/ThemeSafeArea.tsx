@@ -16,6 +16,6 @@ import { SafeAreaView, type ViewProps } from 'react-native';
 export default class ThemedSafeArea extends React.Component<ViewProps> {
     render(): React.ReactNode {
         const { style, ...otherProps } = this.props;
-        return <SafeAreaView style={[style]} {...otherProps} />
+        return <SafeAreaView style={[style, { backgroundColor: "#FFF" }]} {...otherProps} />
     }
 }

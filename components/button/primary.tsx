@@ -25,7 +25,7 @@ export default class PrimaryButton extends Component<IButtonProps> {
                             : Gold
                                 ? ['#FBA91E', '#FBA91E']
                                 : Grey
-                                    ? ['#757575', '#757575']
+                                    ? ['#D1D1D1', '#D1D1D1']
                                     : ["#FFF", '#FFF']
                     }
                     start={{ x: 0, y: 0 }}
@@ -38,7 +38,7 @@ export default class PrimaryButton extends Component<IButtonProps> {
                         Gradient && styles.gradientButton,
                         Grey && styles.greyButton,
                         Gold && styles.goldButton,
-                        !Gold && { borderWidth: Gradient ? 0 : 1, borderColor: "#000000" }
+                        !Gold && { borderWidth: (Gradient || Grey) ? 0 : 1, borderColor: "#000000" }
                     ]}
                 >
                     {loading ? (

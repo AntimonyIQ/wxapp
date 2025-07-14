@@ -26,12 +26,10 @@ export default class RegisterPinScreen extends React.Component<IProps, IState> {
     private readonly title = "Create Pin";
     private appreance: ColorSchemeName = Appearance.getColorScheme();
     private pinRefs: React.RefObject<TextInput | null>[] = Array(4).fill(null).map(() => React.createRef<TextInput>());
+
     constructor(props: IProps) {
         super(props);
         this.state = { pin: Array(4).fill(""), loading: false };
-        if (!this.session) {
-            logger.log("Session not found. Redirecting to login screen.");
-        }
         this.registration = this.session.registration;
     }
 
@@ -56,22 +54,25 @@ export default class RegisterPinScreen extends React.Component<IProps, IState> {
         }
     }
 
-    private handlePinInput = (value: string, index: number): void => {
-        let { pin } = this.state;
-        const newPin = [...pin];
+    private handlePinChange = (text: string, index: number): void => {
+        const newPin = [...this.state.pin];
+        newPin[index] = text;
 
-        if (value === 'Backspace') {
-            if (newPin[index]) {
-                newPin[index] = "";
-            } else if (index > 0) {
-                newPin[index - 1] = "";
-                this.pinRefs[index - 1].current?.focus();
-            }
-        } else {
-            newPin[index] = value;
-            if (index < newPin.length - 1) {
+        this.setState({ pin: newPin }, () => {
+            if (text && index < this.pinRefs.length - 1) {
                 this.pinRefs[index + 1].current?.focus();
             }
+        });
+    };
+
+    private handlePinBackspace = (index: number): void => {
+        const newPin = [...this.state.pin];
+
+        if (newPin[index]) {
+            newPin[index] = "";
+        } else if (index > 0) {
+            newPin[index - 1] = "";
+            this.pinRefs[index - 1].current?.focus();
         }
 
         this.setState({ pin: newPin });
@@ -83,8 +84,13 @@ export default class RegisterPinScreen extends React.Component<IProps, IState> {
                 <TextInput
                     style={styles.input}
                     value={item}
-                    onChangeText={(text) => this.handlePinInput(text, index)}
-                    keyboardType='numeric'
+                    onChangeText={(text) => this.handlePinChange(text, index)}
+                    onKeyPress={({ nativeEvent }) => {
+                        if (nativeEvent.key === 'Backspace') {
+                            this.handlePinBackspace(index);
+                        }
+                    }}
+                    keyboardType="numeric"
                     maxLength={1}
                     secureTextEntry={true}
                     ref={this.pinRefs[index]}
@@ -103,8 +109,18 @@ export default class RegisterPinScreen extends React.Component<IProps, IState> {
         <TouchableOpacity
             style={styles.box}
             onPress={() => {
-                const index = item === 'Backspace' ? this.state.pin.findIndex(p => p === '') - 1 : this.state.pin.findIndex(p => !p);
-                this.handlePinInput(item.toString(), index >= 0 ? index : this.state.pin.length - 1);
+                const { pin } = this.state;
+                const index = item === 'Backspace'
+                    ? pin.findIndex(p => p === '') - 1
+                    : pin.findIndex(p => !p);
+
+                const targetIndex = index >= 0 ? index : pin.length - 1;
+
+                if (item === 'Backspace') {
+                    this.handlePinBackspace(targetIndex);
+                } else {
+                    this.handlePinChange(item.toString(), targetIndex);
+                }
             }}
         >
             {item === 'Backspace' ? (
@@ -122,7 +138,6 @@ export default class RegisterPinScreen extends React.Component<IProps, IState> {
                 <Stack.Screen options={{ title: this.title, headerShown: false }} />
                 <ThemedSafeArea style={styles.safeArea}>
                     <ThemedView style={{ paddingHorizontal: 16, paddingTop: 24 }}>
-
                         <BackButton
                             title={`${this.title}`}
                             subtitle={'Set pin to approve your transactions'}
@@ -144,13 +159,12 @@ export default class RegisterPinScreen extends React.Component<IProps, IState> {
 
                         <LoadingModal loading={loading} />
                     </ThemedView>
+
                     <ThemedView style={styles.keypadContainer}>
                         <ThemedView style={{ width: '100%', paddingHorizontal: 16, marginBottom: 30 }}>
-                            {pin ? (
-                                <PrimaryButton Gradient title={'Continue'} onPress={this.handlePin} />
-                            ) : (
-                                <PrimaryButton onPress={() => { }} title={'Continue'} />
-                            )}
+                            {(pin.join('') && pin.join('').length === 4)
+                                ? <PrimaryButton Gradient title={'Continue'} onPress={this.handlePin} />
+                                : <PrimaryButton Grey onPress={() => { }} title={'Continue'} />}
                         </ThemedView>
                         <FlatList
                             data={[1, 2, 3, 4, 5, 6, 7, 8, 9, '.', 0, 'Backspace']}

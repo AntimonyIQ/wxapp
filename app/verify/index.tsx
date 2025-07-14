@@ -1,19 +1,31 @@
+// This is part for the Wealthx Mobile Application.
+// Copyright © 2023 WealthX. All rights reserved.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// http://www.apache.org/licenses/LICENSE-2.0
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 import React from "react";
 import sessionManager from "@/session/session";
-import { ActivityIndicator, Appearance, Dimensions, FlatList, Platform, Pressable, StyleSheet, TextInput } from "react-native";
+import { ActivityIndicator, Appearance, Dimensions, FlatList, Platform, Pressable, StyleSheet, TextInput, View } from "react-native";
 import logger from "@/logger/logger";
 import { router, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import Toast from "react-native-toast-message";
 import BackButton from "@/components/button/back";
 import { Colors } from "@/constants/Colors";
 import LoadingModal from "@/components/modals/loading";
 import PrimaryButton from "@/components/button/primary";
 import Defaults from "../default/default";
-import { IRegistration, UserData } from "@/interface/interface";
+import { IRegistration, IResponse, UserData } from "@/interface/interface";
 import ThemedView from "@/components/ThemedView";
 import ThemedSafeArea from "@/components/ThemeSafeArea";
 import ThemedText from "@/components/ThemedText";
+import { Status } from "@/enums/enums";
 
 interface IProps { }
 
@@ -22,6 +34,7 @@ interface IState {
     loading: boolean;
     error: string;
     resetLoading: boolean;
+    resendCooldown: number; // in seconds
 }
 
 const { height } = Dimensions.get("window");
@@ -31,17 +44,50 @@ export default class VerifyScreen extends React.Component<IProps, IState> {
     private readonly title = "Check your email";
     private registration: IRegistration;
     private inputRefs: React.RefObject<TextInput | null>[] = Array(4).fill(null).map(() => React.createRef<TextInput>());
+    private interval: number | null = null;
 
     constructor(props: IProps) {
         super(props);
-        this.state = { otp: Array(4).fill(""), loading: false, error: "", resetLoading: false };
+        this.state = {
+            otp: Array(4).fill(""),
+            loading: false,
+            error: "",
+            resetLoading: false,
+            resendCooldown: 120, // 2 minutes
+        };
         if (!this.session) {
             logger.log("Session not found. Redirecting to login screen.");
         }
         this.registration = this.session.registration;
     }
 
-    componentDidMount(): void { }
+    componentDidMount(): void {
+        this.startCooldownTimer();
+    }
+
+    componentWillUnmount(): void {
+        if (this.interval) {
+            clearInterval(this.interval);
+        }
+    }
+
+    private startCooldownTimer = (): void => {
+        this.interval = setInterval(() => {
+            this.setState(prev => {
+                if (prev.resendCooldown <= 1 && this.interval) {
+                    clearInterval(this.interval);
+                    return { resendCooldown: 0 };
+                }
+                return { resendCooldown: prev.resendCooldown - 1 };
+            });
+        }, 1000);
+    };
+
+    private formatTime = (seconds: number): string => {
+        const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+        const s = (seconds % 60).toString().padStart(2, '0');
+        return `${m}:${s}`;
+    };
 
     private handleInputChange = (text: string, index: number): void => {
         const newInputs: string[] = [...this.state.otp];
@@ -71,49 +117,61 @@ export default class VerifyScreen extends React.Component<IProps, IState> {
             const { otp } = this.state;
 
             await Defaults.IS_NETWORK_AVAILABLE();
-
             if (!otp.every((code) => code.trim() !== "")) throw new Error("All fields are required");
 
-            const response = await fetch(`${Defaults.API}/auth/verify-otp`, {
+            const res = await fetch(`${Defaults.API}/auth/email/verify`, {
                 method: 'POST',
-                headers: { ...Defaults.HEADERS },
-                body: JSON.stringify({ otp: otp.join("") }),
+                headers: {
+                    ...Defaults.HEADERS,
+                    'x-wealthx-handshake': this.session.client.publicKey,
+                    'x-wealthx-deviceid': this.session.deviceId,
+                    'x-wealthx-location': this.session.location,
+                },
+                body: JSON.stringify({ email: this.registration.email, otp: otp.join("") }),
             });
 
-            const data = await response.json();
-            this.setState({ loading: false });
-
-            this.setState({}, () => {
+            const data: IResponse = await res.json();
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
                 router.navigate("/register");
-            });
-
+            };
         } catch (error: any) {
-            const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
-            logger.error(errorMessage);
-            Toast.show({
-                type: "error",
-                text2: errorMessage,
-                text1Style: { fontSize: 16, fontFamily: 'AeonikBold' },
-                text2Style: { fontSize: 12, fontFamily: 'AeonikRegular' },
-            });
+            logger.error(error.message);
+            Defaults.TOAST(error.message);
         } finally {
             this.setState({ loading: false });
         }
     }
 
     private handleOTPResend = async (): Promise<void> => {
+        if (this.state.resendCooldown > 0) return;
+
         try {
-            this.setState({ resetLoading: true });
+            this.setState({ resetLoading: true, resendCooldown: 120 });
+            this.startCooldownTimer();
+            await Defaults.IS_NETWORK_AVAILABLE();
+
+            const res = await fetch(`${Defaults.API}/auth/email/resend-otp`, {
+                method: 'POST',
+                headers: {
+                    ...Defaults.HEADERS,
+                    'x-wealthx-handshake': this.session.client.publicKey,
+                    'x-wealthx-deviceid': this.session.deviceid,
+                    'x-wealthx-location': this.session.location,
+                },
+                body: JSON.stringify({ email: this.registration.email }),
+            });
+
+            const data = await res.json();
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
+                Defaults.TOAST('OTP has been resent', "OTP Resent", "success");
+            };
         } catch (error: any) {
             logger.log(error.message);
-            Toast.show({
-                type: "error",
-                text2: error.message,
-                text1Style: { fontSize: 16, fontFamily: 'AeonikBold' },
-                text2Style: { fontSize: 12, fontFamily: 'AeonikRegular' },
-            });
+            Defaults.TOAST(error.message);
         } finally {
-            this.setState({ resetLoading: true });
+            this.setState({ resetLoading: false });
         }
     }
 
@@ -135,18 +193,17 @@ export default class VerifyScreen extends React.Component<IProps, IState> {
     };
 
     render(): React.ReactNode {
-        const { otp, resetLoading, error, loading } = this.state;
+        const { otp, resetLoading, error, loading, resendCooldown } = this.state;
         return (
             <>
                 <Stack.Screen options={{ title: 'Onboarding', headerShown: false }} />
                 <ThemedSafeArea style={styles.safeArea}>
                     <ThemedView style={{ height: "100%" }}>
-                        <ThemedView style={{ paddingHorizontal: 16, paddingTop: 20, }}>
-
+                        <ThemedView style={{ paddingHorizontal: 16, paddingTop: 20 }}>
                             <ThemedView style={{ marginBottom: 30 }}>
                                 <BackButton
                                     title={this.title}
-                                    subtitle={`We sent a one time password to your email`} // ${this.registration.email.slice(0,1)}******${this.registration.email.slice(-10)}
+                                    subtitle={`We sent a one time password to your email`}
                                 />
                             </ThemedView>
 
@@ -158,29 +215,34 @@ export default class VerifyScreen extends React.Component<IProps, IState> {
                                 contentContainerStyle={styles.inputContainer}
                             />
 
-                            <Pressable style={{ marginTop: 12, flexDirection: "row", gap: 8, alignItems: "center" }} onPress={this.handleOTPResend}>
-                                <ThemedText
-                                    style={{
-                                        fontFamily: 'AeonikRegular',
-                                        fontSize: 14,
-                                        color: '#757575',
-                                        lineHeight: 16,
-                                    }}
-                                >
+                            <Pressable
+                                style={{ marginTop: 12, flexDirection: "row", gap: 8, alignItems: "center" }}
+                                onPress={this.handleOTPResend}
+                                disabled={resendCooldown > 0}
+                            >
+                                <ThemedText style={{ fontFamily: 'AeonikRegular', fontSize: 14, color: '#757575', lineHeight: 16 }}>
                                     Didn't get the code?
                                 </ThemedText>
-                                {resetLoading
-                                    ? <ActivityIndicator color={Colors.blue} size={15} />
-                                    : <ThemedText style={{ fontFamily: 'AeonikRegular', fontSize: 14, }}>Resend code</ThemedText>}
+                                {resetLoading ? (
+                                    <ActivityIndicator color={Colors.blue} size={15} />
+                                ) : resendCooldown > 0 ? (
+                                    <ThemedText style={{ fontFamily: 'AeonikRegular', fontSize: 14, color: '#999' }}>
+                                        Retry in {this.formatTime(resendCooldown)}
+                                    </ThemedText>
+                                ) : (
+                                    <ThemedText style={{ fontFamily: 'AeonikRegular', fontSize: 14, color: '#253E92' }}>
+                                        Resend code
+                                    </ThemedText>
+                                )}
                             </Pressable>
 
                             <ThemedView style={{ marginTop: 40, gap: 10 }}>
                                 <PrimaryButton Gradient title={'verify'} onPress={this.handleVerifyOTP} />
                                 {error.length > 0 && <ThemedText style={{ color: 'red' }}>{error}</ThemedText>}
                             </ThemedView>
-
                         </ThemedView>
                     </ThemedView>
+
                     <Pressable
                         style={{
                             position: "fixed",
@@ -208,7 +270,7 @@ export default class VerifyScreen extends React.Component<IProps, IState> {
                 </ThemedSafeArea>
                 <StatusBar style='light' />
             </>
-        )
+        );
     }
 }
 

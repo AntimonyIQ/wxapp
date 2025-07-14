@@ -1,9 +1,8 @@
 import { Image } from 'expo-image';
-import React, { Component } from 'react';
-import { Appearance, ColorSchemeName, Pressable, StyleSheet, Text, View } from 'react-native';
-import { ThemedView } from '../ThemedView';
-import { ThemedText } from '../ThemedText';
-import { Colors } from '@/constants/Colors';
+import React from 'react';
+import { Pressable, StyleSheet, } from 'react-native';
+import ThemedText from '../ThemedText';
+import ThemedView from '../ThemedView';
 
 interface IMarket {
     key: string;
@@ -24,7 +23,6 @@ interface MarketProps {
 }
 
 export default class MarketCard extends React.Component<MarketProps> {
-    private appreance: ColorSchemeName = Appearance.getColorScheme();
     render() {
         const { market, onPress, hideBalance } = this.props;
 
@@ -37,10 +35,10 @@ export default class MarketCard extends React.Component<MarketProps> {
                     paddingVertical: 9,
                     alignItems: 'center',
                 }}>
-                <ThemedView style={{ flexDirection: 'row', gap: 12, backgroundColor: "transparent" }}>
+                <ThemedView style={{ flexDirection: 'row', gap: 12, backgroundColor: "transparent", alignItems: "center" }}>
                     <Image source={{ uri: market.icon }} style={styles.logo} />
-                    <ThemedView style={{ flexDirection: "column", gap: 10, backgroundColor: "transparent" }}>
-                        <ThemedView style={{ flexDirection: "row", gap: 7, alignItems: "flex-start", backgroundColor: "transparent" }}>
+                    <ThemedView style={{ flexDirection: "column", gap: 0, backgroundColor: "transparent" }}>
+                        <ThemedView style={{ flexDirection: "row", gap: 3, alignItems: "flex-start", backgroundColor: "transparent" }}>
                             <ThemedText
                                 style={{
                                     fontSize: 14,
@@ -53,7 +51,7 @@ export default class MarketCard extends React.Component<MarketProps> {
                                     fontSize: 9,
                                     fontFamily: 'AeonikRegular',
                                     borderRadius: 4,
-                                    backgroundColor: this.appreance === "dark" ? Colors.dark.background : "#f1f1f1",
+                                    backgroundColor: "#f1f1f1",
                                     padding: 2,
                                     paddingHorizontal: 5
                                 }}
@@ -69,7 +67,7 @@ export default class MarketCard extends React.Component<MarketProps> {
                                     color: "#8E8E93"
                                 }}
                             >
-                                {market.price}
+                                ${market.price}
                             </ThemedText>
                             {market.wallet && (
                                 <ThemedText
@@ -93,7 +91,7 @@ export default class MarketCard extends React.Component<MarketProps> {
                             fontSize: 14,
                             fontFamily: 'AeonikMedium',
                         }}>
-                        {hideBalance ? "****" : market.balanceAmount}
+                        {hideBalance ? "****" : `${market.balanceAmount} ${market.subHead}`}
                     </ThemedText>
                     {market.wallet && (
                         <ThemedText
@@ -103,7 +101,7 @@ export default class MarketCard extends React.Component<MarketProps> {
                                 color: "#757575",
                                 textAlign: 'right',
                             }}>
-                            {hideBalance ? "****" : market.balanceInUsd}
+                            {hideBalance ? "****" : `$${market.balanceInUsd}`}
                         </ThemedText>
                     )}
                 </ThemedView>

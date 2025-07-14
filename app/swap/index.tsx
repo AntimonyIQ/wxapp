@@ -1,7 +1,7 @@
 import logger from '@/logger/logger';
 import { router, Stack } from 'expo-router';
 import React from 'react';
-import { IList, IUser, UserData } from '@/interface/interface';
+import { IList, IMarket, IResponse, UserData } from '@/interface/interface';
 import { Appearance, ColorSchemeName, FlatList, Platform, StyleSheet, TouchableOpacity } from 'react-native';
 import sessionManager from '@/session/session';
 import { Colors } from '@/constants/Colors';
@@ -10,14 +10,14 @@ import MessageModal from '@/components/modals/message';
 import ListModal from '@/components/modals/list';
 import LoadingModal from '@/components/modals/loading';
 import SwapTextField from '@/components/inputs/swap';
-import Defaults from '../default/default';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import PrimaryButton from '@/components/button/primary';
 import { StatusBar } from 'expo-status-bar';
-import { Coin, UserType } from '@/enums/enums';
+import { BlockchainNetwork, Coin, Fiat, Status, WalletType } from '@/enums/enums';
 import ThemedText from '@/components/ThemedText';
 import ThemedSafeArea from '@/components/ThemeSafeArea';
 import ThemedView from '@/components/ThemedView';
+import Defaults from '../default/default';
 
 interface SwapProps { }
 
@@ -30,147 +30,137 @@ interface SwapState {
     error_modal: boolean;
     error_title: string;
     error_message: string;
-    fromCurrency: IList;
-    toCurrency: IList;
-    fromSwap: ISwap;
-    toSwap: ISwap;
-    swaps: Array<ISwap>;
+    fromCurrency: IMarket;
+    toCurrency: IMarket;
     whom: interaction;
     trade_modal: boolean;
     loading: boolean;
     fee: number;
     fromValue: string;
     toValue: string;
-    fromPrice: number;
-    toPrice: number;
-    remove: Array<string>;
+    lists: Array<IList>;
 }
 
 export default class SwapScreen extends React.Component<SwapProps, SwapState> {
     private session: UserData = sessionManager.getUserData();
     private appreance: ColorSchemeName = Appearance.getColorScheme();
     private readonly title = "Swap Screen";
-    private coin: any;
-    private readonly trades: IList[] = [
-        { name: 'Bitcoin', description: Coin.BTC, icon: "https://coin-images.coingecko.com/coins/images/1/large/bitcoin.png?1696501400" },
-        { name: 'Ethereum', description: Coin.ETH, icon: "https://coin-images.coingecko.com/coins/images/279/large/ethereum.png?1696501628" },
-        { name: 'Tether USDT', description: Coin.USDT, icon: "https://coin-images.coingecko.com/coins/images/325/large/Tether.png?1696501661" },
-        { name: 'USD Coin', description: Coin.USDC, icon: "https://coin-images.coingecko.com/coins/images/6319/large/usdc.png?1696506694" },
-        { name: 'Naira', description: Coin.NGN, icon: "https://img.icons8.com/emoji/96/nigeria-emoji.png" },
-    ];
-    // private readonly emptyAddress: AddressDocument = { _id: '', address: '', privateKey: '', publicKey: '', currency: '', userId: '', balance: 0, createdAt: '', updatedAt: '' };
-    private readonly emptySwap: ISwap = { name: '', symbol: Coin.BTC, icon: '', sellRate: 0, buyRate: 0, exchangeRate: 0, fee: 0, gas: 0, isActive: false, createdAt: new Date(), updatedAt: new Date() }
-    private NGN_BALANCE: number;
     constructor(props: SwapProps) {
         super(props);
         this.state = {
             error_message: "",
             error_modal: false,
             error_title: "",
-            fromCurrency: this.trades[0],
-            toCurrency: this.trades[4],
+            fromCurrency: {
+                currency: Coin.BTC,
+                name: '',
+                categorie: WalletType.CRYPTO,
+                network: BlockchainNetwork.ETHEREUM,
+                address: '',
+                price: 0,
+                balance: 0,
+                balanceUsd: 0,
+                icon: '',
+                percent_change_24h: 0,
+                volume_change_24h: 0,
+                market_cap: 0,
+                active: false
+            },
+            toCurrency: {
+                currency: Coin.BTC,
+                name: '',
+                categorie: WalletType.CRYPTO,
+                network: BlockchainNetwork.ETHEREUM,
+                address: '',
+                price: 0,
+                balance: 0,
+                balanceUsd: 0,
+                icon: '',
+                percent_change_24h: 0,
+                volume_change_24h: 0,
+                market_cap: 0,
+                active: false
+            },
             whom: interaction.from,
             trade_modal: false,
             loading: false,
             fee: 0,
             fromValue: "",
             toValue: "",
-            fromSwap: this.emptySwap,
-            toSwap: this.emptySwap,
-            swaps: [],
-            fromPrice: 0,
-            toPrice: 0,
-            remove: []
+            lists: []
         };
-        if (!this.session || !this.session.isLoggedIn) {
+        const login: boolean = Defaults.LOGIN_STATUS();
+        if (!login) {
             logger.log("Session not found. Redirecting to login screen.");
-            router.dismissTo("/");
+            router.dismissTo(this.session.user?.passkeyEnabled === true ? "/passkey" : '/onboarding/login');
+            return;
         };
-        this.coin = this.session.selectedCoin;
-        this.addresses = this.session.addresses;
-        this.NGN_BALANCE = parseFloat(this.session.NGN_BALANCE || 0);
     }
 
     componentDidMount(): void {
         logger.clear();
         this.local();
-        this.loadCurrencies();
     }
 
     private local = (): void => {
-        const { currency } = this.coin;
-        const from: IList = this.findTrade(currency.symbol);
-        this.setState({ fromCurrency: from });
+        const { currency, network } = this.session.params;
+        const toCurrency: IMarket = Defaults.FIND_MARKET(Fiat.NGN, BlockchainNetwork.NONE);
+        const fromCurrency: IMarket = Defaults.FIND_MARKET(currency, network);
+
+        const mkt: Array<IMarket> = Defaults.FILTER_MARKET(this.session.markets, [Coin.USDC, Coin.USDT]);
+
+        const lists: Array<IList> = mkt.map((market, _index) => ({
+            name: market.name,
+            description: market.currency,
+            icon: market.icon,
+        }));
+
+        this.setState({ toCurrency: toCurrency, fromCurrency: fromCurrency, lists });
     }
 
-    private findTrade = (symbol: string): IList => {
-        const trade: IList | undefined = this.trades.find(trade => trade.description === symbol);
-        if (!trade) throw new Error('Trade not found for symbol: ' + symbol);
-        return trade;
-    };
-
-    private findAddress = (symbol: string): AddressDocument => {
-        const address: AddressDocument | undefined = this.addresses.find(addr => addr.currency === symbol);
-        if (!address) throw new Error('Address not found for symbol: ' + symbol);
-        return address;
-    };
-
-    private findSwap = (symbol: Coin, currencies: Array<ISwap>): ISwap => {
-        const swap: ISwap | undefined = currencies.find(swap => swap.symbol === symbol);
-        if (!swap) throw new Error('Swap not found for symbol: ' + symbol);
-        return swap;
-    }
-
-    private processSelectedTrade = async (trade: IList) => {
-        const swaps: ISwap[] = this.state.swaps;
-        logger.log("swap focus: ", this.state.whom);
-        const fromSwap: ISwap = this.findSwap(trade.description as Coin, swaps);
-
-        if (this.state.whom === interaction.from) {
-            if (trade.description === this.state.toCurrency.description) {
-                this.setState({ fromCurrency: this.state.toCurrency, toCurrency: this.state.fromCurrency, trade_modal: false, fromValue: "", toValue: "", fromPrice: 0, toPrice: 0, });
-                await this.loadCurrencies();
-                return;
-            }
-
-            this.setState({ fromCurrency: trade, fromSwap, toSwap: this.state.toSwap, trade_modal: false, fromValue: "", toValue: "", fromPrice: 0, toPrice: 0, });
-        } else {
-            const toSwap: ISwap = this.findSwap(trade.description as Coin, swaps);
-            if (trade.description === this.state.fromCurrency.description) {
-                this.setState({ fromCurrency: this.state.toCurrency, toCurrency: this.state.fromCurrency, trade_modal: false, fromValue: "", toValue: "", fromPrice: 0, toPrice: 0, });
-                await this.loadCurrencies();
-                return;
-            }
-            this.setState({ toCurrency: trade, toSwap, fromSwap: this.state.fromSwap, trade_modal: false, fromValue: "", toValue: "", fromPrice: 0, toPrice: 0, });
-        }
-
-        await this.loadCurrencies();
-    };
-
-    private toggleRouting = async () => {
-        const { fromCurrency, toCurrency, fromSwap, toSwap } = this.state;
-        this.setState({ fromCurrency: toCurrency, toCurrency: fromCurrency, fromSwap: toSwap, toSwap: fromSwap, fromValue: "", toValue: "", fromPrice: 0, toPrice: 0 });
-        await this.loadCurrencies();
-    }
-
-    private loadCurrencies = async () => {
+    private estimate = async () => {
         try {
             this.setState({ loading: true });
-            const response = await fetch(`${Defaults.API}/swap`, {
-                method: "GET",
-                headers: { ...Defaults.HEADERS, "Authorization": `Bearer ${this.session.accessToken}` },
+            await Defaults.IS_NETWORK_AVAILABLE();
+
+            const login: boolean = Defaults.LOGIN_STATUS();
+            if (!login) {
+                logger.log("Session not found. Redirecting to login screen.");
+                router.dismissTo(this.session.user?.passkeyEnabled === true ? "/passkey" : '/onboarding/login');
+                return;
+            };
+
+            const { fromCurrency, toCurrency, whom, fromValue, toValue } = this.state;
+
+            const res = await fetch(`${Defaults.API}/wallet/swap/estimate`, {
+                method: 'POST',
+                headers: {
+                    ...Defaults.HEADERS,
+                    'x-wealthx-handshake': this.session.client?.publicKey,
+                    'x-wealthx-deviceid': this.session.deviceid,
+                    Authorization: `Bearer ${this.session.authorization}`,
+                },
+                body: JSON.stringify({
+                    fromCurrency: fromCurrency.currency,
+                    toCurrency: toCurrency.currency,
+                    fromValue,
+                    toValue,
+                    isFrom: whom === interaction.from ? true : false,
+                }),
             });
 
-            if (!response.ok) throw new Error(`response failed with status: ${response.status}`);
+            const data: IResponse = await res.json();
 
-            const data = await response.json();
-            if (data.status === "success") {
-                const { fromCurrency, toCurrency } = this.state;
-                const swaps: ISwap[] = data.data || [];
-                const fromSwap: ISwap = this.findSwap(fromCurrency.description as Coin, swaps);
-                const toSwap: ISwap = this.findSwap(toCurrency.description as Coin, swaps);
-                this.setState({ fromSwap, toSwap, fee: fromSwap.fee, swaps });
-            }
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
+                if (!data.handshake) throw new Error('Unable to process login response right now, please try again.');
+                const parseData = Defaults.PARSE_DATA(data.data, this.session.client?.privateKey, data.handshake);
+
+                this.setState({
+                    toValue: String(Number(parseData.toValue).toFixed(2)),
+                    fromValue: String(parseData.fromValue),
+                });
+            };
 
         } catch (error: any) {
             if (error.response) {
@@ -187,118 +177,15 @@ export default class SwapScreen extends React.Component<SwapProps, SwapState> {
     };
 
     private handleTextChanged = (text: string) => {
-        const { whom, fromCurrency, toCurrency, fromSwap, toSwap } = this.state;
-        const supported: Array<string> = [Coin.USDT, Coin.USDC, Coin.NGN];
-        logger.log("textChanged focus: ", text);
+        const { whom } = this.state;
+        whom === interaction.from
+            ? this.setState({ fromValue: text })
+            : this.setState({ toValue: text });
 
-        if (toCurrency.description === Coin.NGN) {
-            const fromRate: number = fromSwap.sellRate;
-            const eRate: number = fromSwap.exchangeRate;
-            switch (this.state.whom) {
-                case interaction.from:
-                    const toPrice: number = parseFloat(text) * eRate;
-                    const toValue: number = eRate * parseFloat(text) * fromRate;
-                    this.setState({
-                        fromValue: text,
-                        toValue: supported.includes(toCurrency.description)
-                            ? toValue.toFixed(2)
-                            : toValue.toFixed(8),
-                        toPrice: toPrice,
-                        fromPrice: toPrice,
-                    });
-                    break;
-                case interaction.to:
-                    const fromPrice: number = parseFloat(text) / fromRate;
-                    const fromValue: number = (1 / eRate) * (parseFloat(text) / fromRate);
-                    this.setState({
-                        toValue: text,
-                        fromValue: supported.includes(fromCurrency.description)
-                            ? fromValue.toFixed(2)
-                            : fromValue.toFixed(8),
-                        toPrice: fromPrice,
-                        fromPrice: fromPrice,
-                    });
-                    break;
-                default:
-                    logger.log("Error processing input: ", text);
-                    break;
-            }
-        } else if (fromCurrency.description === Coin.NGN) {
-            const toRate: number = fromSwap.buyRate;
-            const eRate: number = toSwap.exchangeRate;
-            logger.log("Testing swap from NGN");
-            switch (whom) {
-                case interaction.from:
-                    const toPrice: number = parseFloat(text) / toRate;
-                    const toValue: number = (1 / eRate) * (parseFloat(text) / toRate);
-                    logger.log("from Rate: ", { toRate, toPrice, eRate });
-                    this.setState({
-                        fromValue: text,
-                        toValue: supported.includes(toCurrency.description)
-                            ? toValue.toFixed(2)
-                            : toValue.toFixed(8),
-                        toPrice: toPrice,
-                        fromPrice: toPrice,
-                    });
-                    break;
-                case interaction.to:
-                    const fromPrice: number = parseFloat(text) * toRate;
-                    const fromValue: number = eRate * parseFloat(text) * toRate;
-                    this.setState({
-                        toValue: text,
-                        fromValue: supported.includes(fromCurrency.description)
-                            ? fromValue.toFixed(2)
-                            : fromValue.toFixed(8),
-                        toPrice: fromPrice,
-                        fromPrice: fromPrice,
-                    });
-                    break;
-                default:
-                    logger.log("Error processing input: ", text);
-                    break;
-            }
-        } else {
-            logger.log("Testing swap between crypto");
-            const fromRate: number = fromSwap.exchangeRate;
-            const toRate: number = toSwap.exchangeRate;
-            switch (whom) {
-                case interaction.from:
-                    const toPrice: number = parseFloat(text) * fromRate;
-                    const toValue: number = supported.includes(toCurrency.description)
-                        ? parseFloat(text) * fromRate
-                        : parseFloat(text) / toRate;
-
-                    this.setState({
-                        fromValue: text,
-                        toValue: supported.includes(toCurrency.description)
-                            ? toValue.toFixed(2)
-                            : toValue.toFixed(8),
-                        toPrice: toPrice,
-                        fromPrice: toPrice,
-                    });
-                    break;
-                case interaction.to:
-                    const fromPrice = parseFloat(text) * toRate;
-                    const fromValue = supported.includes(toCurrency.description)
-                        ? parseFloat(text) / fromRate
-                        : parseFloat(text) * toRate;
-
-                    this.setState({
-                        fromValue: supported.includes(fromCurrency.description)
-                            ? fromValue.toFixed(2)
-                            : fromValue.toFixed(8),
-                        toValue: text,
-                        toPrice: fromPrice,
-                        fromPrice: fromPrice,
-                    });
-                    this.setState({ toValue: text });
-                    break;
-                default:
-                    logger.log("Error processing input: ", text);
-                    break;
-            }
-        }
+        this.estimate();
     };
+
+    private processSelectedTrade = () => { }
 
     private renderKeypadItem = ({ item }: { item: any }): React.JSX.Element => (
         <TouchableOpacity
@@ -310,7 +197,7 @@ export default class SwapScreen extends React.Component<SwapProps, SwapState> {
 
                     if (currentValue.length === 0) {
                         logger.log("currentValue length: ", currentValue.length);
-                        this.setState({ fromValue: "", toValue: "", fromPrice: 0, toPrice: 0 });
+                        this.setState({ fromValue: "", toValue: "" });
                         return;
                     }
                 } else {
@@ -326,27 +213,7 @@ export default class SwapScreen extends React.Component<SwapProps, SwapState> {
 
     private next = async () => {
         try {
-            const { fromValue, fromCurrency, fromSwap, fee, fromPrice, toValue, toCurrency, toSwap, toPrice } = this.state;
-            const balance: number = fromCurrency.description === Coin.NGN ? this.NGN_BALANCE : this.findAddress(fromCurrency.description).balance;
 
-            const user: IUser = this.session.user;
-
-            if (user.userType === UserType.USER) {
-                if (!fromValue || !toValue) throw new Error("Please provide swap amount");
-                if (fromCurrency.description === toCurrency.description) throw new Error("You cannot swap the same currency");
-                if (balance < Number(fromValue)) throw new Error(`Insufficient ${fromCurrency.description} balance to continue swap`);
-            }
-            const payload: ISwapPayload = {
-                fromValue: Number(fromValue),
-                toValue: Number(toValue),
-                fromSwap: fromSwap,
-                toSwap: toSwap,
-                fees: fee,
-                fromPrice,
-                toPrice
-            };
-
-            await sessionManager.updateSession({ ...this.session, swapPayload: payload });
             router.navigate("/swap/confirm");
         } catch (error: any) {
             logger.error(error.message || error);
@@ -354,8 +221,13 @@ export default class SwapScreen extends React.Component<SwapProps, SwapState> {
         }
     };
 
+    private toggleRouting = () => {
+        const { fromCurrency, toCurrency } = this.state;
+        this.setState({ fromCurrency: toCurrency, toCurrency: fromCurrency, toValue: "", fromValue: "" });
+    }
+
     render(): React.ReactNode {
-        const { error_message, toPrice, fromPrice, error_modal, remove, error_title, fromValue, toValue, trade_modal, loading, fromCurrency, toCurrency } = this.state;
+        const { error_message, lists, error_modal, error_title, fromValue, toValue, trade_modal, loading, fromCurrency, toCurrency } = this.state;
         return (
             <>
                 <Stack.Screen options={{ title: this.title, headerShown: false }} />
@@ -365,7 +237,7 @@ export default class SwapScreen extends React.Component<SwapProps, SwapState> {
                             style={styles.backButton}
                             onPress={() => router.back()}>
                             <Image
-                                source={require("../../assets/icons/chevron-left.svg")}
+                                source={require("../../assets/icons/chevron_right.svg")}
                                 style={styles.backIcon}
                                 tintColor={this.appreance === "dark" ? Colors.light.background : "#000000"} />
                             <ThemedText style={styles.backText}>Back</ThemedText>
@@ -378,18 +250,15 @@ export default class SwapScreen extends React.Component<SwapProps, SwapState> {
                         <ThemedView>
 
                             <SwapTextField
-                                onChangeCoin={(): void => this.setState({ remove: [], whom: interaction.from, trade_modal: !trade_modal })}
-                                onMaxPress={(): void => this.setState({ whom: interaction.from }, async () => {
-                                    const balance: number = fromCurrency.description === Coin.NGN ? this.NGN_BALANCE : this.findAddress(fromCurrency.description).balance;
-                                    this.handleTextChanged(String(balance));
+                                onChangeCoin={(): void => this.setState({ whom: interaction.from, trade_modal: !trade_modal })}
+                                onMaxPress={(): void => this.setState({ whom: interaction.from }, () => {
+                                    this.handleTextChanged(fromCurrency.balance.toString());
                                 })}
-                                currency={fromCurrency}
+                                asset={fromCurrency}
                                 onChangeText={this.handleTextChanged}
-                                balance={fromCurrency.description === Coin.NGN ? this.NGN_BALANCE : this.findAddress(fromCurrency.description).balance}
                                 value={fromValue}
                                 onFocus={(e): void => this.setState({ whom: interaction.from })}
-                                readOnly={false}
-                                price={toPrice} />
+                                readOnly={false} />
 
                             <TouchableOpacity onPress={this.toggleRouting}>
                                 <ThemedView style={{
@@ -418,18 +287,17 @@ export default class SwapScreen extends React.Component<SwapProps, SwapState> {
                             </TouchableOpacity>
 
                             <SwapTextField
-                                onChangeCoin={(): void => this.setState({ remove: [Coin.BTC, Coin.ETH], whom: interaction.to, trade_modal: !trade_modal })}
-                                onMaxPress={(): void => this.setState({ whom: interaction.to }, async () => {
-                                    const balance: number = toCurrency.description === Coin.NGN ? this.NGN_BALANCE : this.findAddress(toCurrency.description).balance;
-                                    this.handleTextChanged(String(balance));
+                                onChangeCoin={(): void => this.setState({ whom: interaction.to }, () => {
+
                                 })}
-                                currency={toCurrency}
+                                onMaxPress={(): void => this.setState({ whom: interaction.to }, () => {
+                                    this.handleTextChanged(toCurrency.balance.toString());
+                                })}
+                                asset={toCurrency}
                                 onChangeText={this.handleTextChanged}
-                                balance={toCurrency.description === Coin.NGN ? this.NGN_BALANCE : this.findAddress(toCurrency.description).balance}
                                 value={toValue}
                                 onFocus={(): void => this.setState({ whom: interaction.to })}
-                                readOnly={false}
-                                price={fromPrice} />
+                                readOnly={false} />
                         </ThemedView>
 
                         <PrimaryButton Gradient title='Continue' onPress={this.next}></PrimaryButton>
@@ -448,13 +316,12 @@ export default class SwapScreen extends React.Component<SwapProps, SwapState> {
 
                     <ListModal
                         visible={trade_modal}
-                        lists={this.trades.filter(trade => !remove.includes(trade.description))
-                        }
+                        lists={lists}
                         listChange={this.processSelectedTrade}
                         onClose={() => this.setState({ trade_modal: !trade_modal })} />
                     <MessageModal
                         visible={error_modal}
-                        type={"error"}
+                        type={Status.ERROR}
                         onClose={(): void => this.setState({ error_modal: !error_modal })}
                         message={{ title: error_title, description: error_message }} />
                     <LoadingModal loading={loading} />
@@ -485,8 +352,8 @@ const styles = StyleSheet.create({
         paddingRight: 20,
     },
     backIcon: {
-        height: 24,
-        width: 24,
+        height: 20,
+        width: 20,
     },
     backText: {
         fontFamily: 'AeonikRegular',

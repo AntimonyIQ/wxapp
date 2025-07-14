@@ -1,7 +1,19 @@
+// This is part for the Wealthx Mobile Application.
+// Copyright © 2023 WealthX. All rights reserved.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// http://www.apache.org/licenses/LICENSE-2.0
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 import React from "react";
 import { Appearance, ColorSchemeName, Platform, ScrollView, StyleSheet } from "react-native";
 import logger from "@/logger/logger";
-import { IRegistration, UserData } from "@/interface/interface";
+import { IRegistration, IResponse, UserData } from "@/interface/interface";
 import sessionManager from "@/session/session";
 import { router, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -11,10 +23,10 @@ import TextField from "@/components/inputs/text";
 import PasswordCondition from "@/components/passwordcondition";
 import PrimaryButton from "@/components/button/primary";
 import LoadingModal from "@/components/modals/loading";
-import Toast from "react-native-toast-message";
 import ThemedSafeArea from "@/components/ThemeSafeArea";
 import ThemedView from "@/components/ThemedView";
 import ThemedText from "@/components/ThemedText";
+import { Status } from "@/enums/enums";
 
 interface IProps { }
 
@@ -57,10 +69,12 @@ interface IState {
     email: string;
     password: string;
     confirmPassword: string;
+    fullName: string;
     loading: boolean;
     emailFocused: boolean;
     passwordFocused: boolean;
     confirmPasswordFocused: boolean;
+    fullNameFocused: boolean;
     conditions: IConditions;
     passwordError: boolean;
 }
@@ -68,7 +82,6 @@ interface IState {
 export default class SignupScreen extends React.Component<IProps, IState> {
     private session: UserData = sessionManager.getUserData();
     private appreance: ColorSchemeName = Appearance.getColorScheme();
-    private isLogin: boolean = sessionManager.checkLoggedIn();
     private readonly title = "Create an account";
     constructor(props: IProps) {
         super(props);
@@ -76,10 +89,12 @@ export default class SignupScreen extends React.Component<IProps, IState> {
             email: "",
             password: "",
             confirmPassword: "",
+            fullName: "",
             loading: false,
-            emailFocused: true,
+            emailFocused: false,
             passwordFocused: false,
             confirmPasswordFocused: false,
+            fullNameFocused: true,
             passwordError: false,
             conditions: {} as IConditions
         }
@@ -123,53 +138,55 @@ export default class SignupScreen extends React.Component<IProps, IState> {
     private handleSubmit = async () => {
         try {
             this.setState({ loading: true });
-            const { email, password, confirmPassword, conditions } = this.state;
+            const { email, password, confirmPassword, conditions, fullName } = this.state;
 
-            if (!email || !password || !confirmPassword) throw new Error("Form is not filled out correctly.");
-
+            await Defaults.IS_NETWORK_AVAILABLE();
+            if (!email || !password || !confirmPassword || !fullName) throw new Error("Form is not filled out correctly.");
             if (!conditions.length || !conditions.uppercase || !conditions.lowercase || !conditions.specialCharacter) throw new Error("Passwords do not meet the required conditions.");
 
-            const response = await fetch(`${Defaults.API}/auth/register`, {
+            const res = await fetch(`${Defaults.API}/auth/email`, {
                 method: 'POST',
-                headers: { ...Defaults.HEADERS },
-                body: JSON.stringify({ email, password, passwordConfirmation: confirmPassword }),
+                headers: {
+                    ...Defaults.HEADERS,
+                    'x-wealthx-handshake': this.session.client.publicKey,
+                    'x-wealthx-deviceid': this.session.deviceid,
+                    'x-wealthx-location': this.session.location,
+                },
+                body: JSON.stringify({ email: email, password: password, fullName: fullName }),
             });
 
-            if (!response.ok) throw new Error("Failed to create user " + response.status.toString());
-            const data = await response.json();
-
-            logger.log("User created successfully. Redirecting to login screen.", data);
-            const registration: IRegistration = { ...this.session.registration, email, password, confirmPassword, termsAndConditions: true };
-            logger.log("this.isLogin: ", this.isLogin);
-            if (!this.isLogin) {
-                await sessionManager.login({
-                    ...this.session,
-                    registration: registration
-                });
-            } else {
+            const data: IResponse = await res.json();
+            console.log(data);
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
+                const registration: IRegistration = { ...this.session.registration, email, password, confirmPassword, fullName, termsAndConditions: true };
                 await sessionManager.updateSession({
                     ...this.session,
                     registration: registration
                 });
-            }
 
-            this.setState({ email: '', password: '', confirmPassword: '' });
-            router.navigate(`/verify`);
+                this.setState({ email: '', password: '', confirmPassword: '', fullName: '' });
+                router.navigate(`/verify`);
+            };
         } catch (error: any) {
             logger.error(error.message);
-            Toast.show({
-                type: "error",
-                text2: error.message,
-                text1Style: { fontSize: 16, fontFamily: 'AeonikBold' },
-                text2Style: { fontSize: 12, fontFamily: 'AeonikRegular' },
-            });
+            Defaults.TOAST(error.message);
         } finally {
             this.setState({ loading: false, });
         }
     }
 
+    private offfocus = () => {
+        this.setState({
+            emailFocused: false,
+            passwordFocused: false,
+            confirmPasswordFocused: false,
+            fullNameFocused: false,
+        })
+    }
+
     render(): React.ReactNode {
-        const { email, emailFocused, password, passwordFocused, conditions, confirmPassword, confirmPasswordFocused, passwordError, loading } = this.state;
+        const { email, emailFocused, password, passwordFocused, fullName, fullNameFocused, conditions, confirmPassword, confirmPasswordFocused, passwordError, loading } = this.state;
         return (
             <>
                 <Stack.Screen options={{ title: 'Onboarding', headerShown: false }} />
@@ -183,10 +200,27 @@ export default class SignupScreen extends React.Component<IProps, IState> {
                             <BackButton title={this.title} />
 
                             <TextField
+                                placeholder={'Full Name'}
+                                title={'Full Name'}
+                                showText={fullNameFocused}
+                                onFocus={() => {
+                                    this.offfocus();
+                                    this.setState({ fullNameFocused: true });
+                                }}
+                                textValue={fullName}
+                                onChangeText={(text) => this.setState({ fullName: text })}
+                                onClear={() => this.setState({ fullName: '' })}
+                                onBlur={() => this.setState({ fullNameFocused: false })}
+                            />
+
+                            <TextField
                                 placeholder={'Email Address'}
                                 title={'Email Address'}
                                 showText={emailFocused}
-                                onFocus={() => this.setState({ emailFocused: true, passwordFocused: false, confirmPasswordFocused: false })}
+                                onFocus={() => {
+                                    this.offfocus();
+                                    this.setState({ emailFocused: true });
+                                }}
                                 textValue={email.toLowerCase()}
                                 onChangeText={(text) => this.setState({ email: text.toLowerCase() })}
                                 onClear={() => this.setState({ email: '' })}
@@ -244,12 +278,8 @@ export default class SignupScreen extends React.Component<IProps, IState> {
 
                             <ThemedView style={{ marginTop: 34, marginBottom: 100, gap: 10 }}>
                                 {email.length > 0 && password.length > 0 && confirmPassword.length > 0 && password === confirmPassword && !loading
-                                    ? <PrimaryButton
-                                        Gradient
-                                        title={'Create Account'}
-                                        onPress={this.handleSubmit}
-                                    />
-                                    : <PrimaryButton disabled title={'Create Account'} onPress={() => { }} />
+                                    ? <PrimaryButton Gradient title={'Create Account'} onPress={this.handleSubmit} />
+                                    : <PrimaryButton Grey disabled title={'Create Account'} onPress={() => { }} />
                                 }
                             </ThemedView>
 

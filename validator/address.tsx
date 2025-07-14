@@ -1,5 +1,7 @@
+import { Coin, Fiat } from "@/enums/enums";
+
 export default class AddressValidator {
-    private prefixes: { BTC: RegExp; ETH: RegExp; LTC: RegExp; XRP: RegExp; BCH: RegExp; ADA: RegExp; DOT: RegExp; XLM: RegExp; LINK: RegExp; BNB: RegExp; USDC: RegExp; USDT: RegExp; SOL: RegExp; };
+    private prefixes: { BTC: RegExp; ETH: RegExp; LTC: RegExp; XRP: RegExp; BCH: RegExp; ADA: RegExp; DOT: RegExp; XLM: RegExp; LINK: RegExp; BNB: RegExp; USDC: RegExp; USDT: RegExp; SOL: RegExp; TRON: RegExp; };
     constructor() {
         this.prefixes = {
             BTC: /^[13mn][a-km-zA-HJ-NP-Z1-9]{25,34}$/,
@@ -15,34 +17,35 @@ export default class AddressValidator {
             USDC: /^(?:0x)?[a-fA-F0-9]{40}$/,
             USDT: /^(?:0x)?[a-fA-F0-9]{40}$/,
             SOL: /^[1-9A-HJ-NP-Za-km-z]{32,44}$/,
+            TRON: /^T[1-9A-HJ-NP-Za-km-z]{33}$/,
         };
     }
 
-    address(symbol: string, publicKey: string): boolean {
+    address(symbol: Coin | Fiat, publicKey: string): boolean {
         switch (symbol.toUpperCase()) {
-            case 'BTC':
+            case Coin.BTC:
                 return this.validateBTCAddress(publicKey);
-            case 'ETH':
-            case 'USDC':
-            case 'USDT':
-                return this.validateETHAddress(publicKey);
-            case 'LTC':
+            case Coin.ETH:
+            case Coin.USDC:
+            case Coin.USDT:
+                return this.validateTokenAddress(publicKey);
+            case Coin.LTC:
                 return this.validateLTCAddress(publicKey);
-            case 'XRP':
+            case Coin.XRP:
                 return this.validateXRPAddress(publicKey);
-            case 'BCH':
+            case Coin.BCH:
                 return this.validateBCHAddress(publicKey);
-            case 'ADA':
+            case Coin.ADA:
                 return this.validateADAAddress(publicKey);
-            case 'DOT':
+            case Coin.DOT:
                 return this.validateDOTAddress(publicKey);
-            case 'XLM':
+            case Coin.XLM:
                 return this.validateXLMAddress(publicKey);
             case 'LINK':
                 return this.validateLINKAddress(publicKey);
-            case 'BNB':
+            case Coin.BNB:
                 return this.validateBNBAddress(publicKey);
-            case 'SOL':
+            case Coin.SOL:
                 return this.validateSOLAddress(publicKey);
             default:
                 throw new Error(`Unsupported blockchain symbol: ${symbol}`);
@@ -62,6 +65,10 @@ export default class AddressValidator {
 
     validateETHAddress(address: string): boolean {
         return this.prefixes.ETH.test(address);
+    }
+
+    validateTRONAddress(address: string) {
+        return this.prefixes.TRON.test(address);
     }
 
     validateLTCAddress(address: string): boolean {
@@ -98,6 +105,14 @@ export default class AddressValidator {
 
     validateSOLAddress(address: string): boolean {
         return this.prefixes.SOL.test(address);
+    }
+
+    validateTokenAddress(address: string) {
+        if (this.validateTRONAddress(address) || this.validateETHAddress(address)) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
     isSymbolSupported(symbol: string): boolean {

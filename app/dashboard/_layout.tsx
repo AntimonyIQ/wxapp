@@ -1,3 +1,15 @@
+// This is part for the Wealthx Mobile Application.
+// Copyright © 2023 WealthX. All rights reserved.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// http://www.apache.org/licenses/LICENSE-2.0
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 import { router, Stack, Tabs } from 'expo-router';
 import React from 'react';
 import { Platform } from 'react-native';
@@ -66,16 +78,6 @@ export default class TabLayout extends React.Component<{}, {}> {
                                     : <Image source={require("../../assets/icons/wallet_active.svg")} style={{ width: 28, height: 28 }} contentFit="contain" transition={1000} />
                         }}
                     />
-                    {/*}
-                    <Tabs.Screen
-                        name="p2p"
-                        options={{
-                            tabBarIcon: ({ focused }) =>
-                                !focused
-                                    ? <Image source={require("../../assets/icons/coin_exchange.svg")} style={{ width: 28, height: 28 }} contentFit="contain" transition={1000} />
-                                    : <Image source={require("../../assets/icons/coin-exchange_active.svg")} style={{ width: 28, height: 28 }} contentFit="contain" transition={1000} />
-                        }}
-                    />*/}
                     <Tabs.Screen
                         name="profile"
                         options={{

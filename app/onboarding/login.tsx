@@ -1,20 +1,33 @@
+// This is part for the Wealthx Mobile Application.
+// Copyright © 2023 WealthX. All rights reserved.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// http://www.apache.org/licenses/LICENSE-2.0
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 import React from "react";
 import { Keyboard, Platform, Pressable, StyleSheet } from "react-native";
 import logger from "@/logger/logger";
-import { UserData } from "@/interface/interface";
+import { ILocation, IResponse, IUser, UserData } from "@/interface/interface";
 import sessionManager from "@/session/session";
 import { router, Stack } from "expo-router";
 import { Colors } from "@/constants/Colors";
 import PrimaryButton from "@/components/button/primary";
 import TextField from "@/components/inputs/text";
 import BackButton from "@/components/button/back";
-import Toast from 'react-native-toast-message';
 import Defaults from "../default/default";
 import LoadingModal from "@/components/modals/loading";
-import { UserType } from "@/enums/enums";
+import { Status } from "@/enums/enums";
 import ThemedSafeArea from "@/components/ThemeSafeArea";
 import ThemedView from "@/components/ThemedView";
 import ThemedText from "@/components/ThemedText";
+import Validate from "@/validator/validator";
+import TwoFAModal from "@/components/modals/twofamodal";
 
 interface IProps { }
 
@@ -24,91 +37,114 @@ interface IState {
     password: string;
     passwordFocused: boolean;
     loading: boolean;
-}
-
-interface ILoginResponse {
-    accessToken: string;
-    expiresIn: string;
-    refreshToken: string;
-    userType: UserType;
-    status: "success" | "error";
-    message: string;
+    location: ILocation | null;
+    authcode: string;
+    authmodal: boolean;
 }
 
 export default class LoginScreen extends React.Component<IProps, IState> {
     private session: UserData = sessionManager.getUserData();
     private readonly title = "Login Screen";
+    private user: IUser | undefined;
     constructor(props: IProps) {
         super(props);
-        this.state = { email: '', password: '', loading: false, emailFocused: true, passwordFocused: false };
-        if (!this.session) {
-            logger.log("Session not found. Redirecting to login screen.");
-        }
+        this.state = { email: '', password: '', loading: false, emailFocused: true, passwordFocused: false, location: null, authcode: '', authmodal: false };
+        this.user = this.session.user;
     }
 
-    componentDidMount(): void { }
+    componentDidMount(): void {
+        this.geolocation();
+    }
+
+    private geolocation = async () => {
+        try {
+            const res = await fetch('https://ipapi.co/json/', {
+                method: 'GET',
+                headers: { "Accept": "application/json" }
+            });
+
+            if (!res.ok) throw new Error('Failed to fetch location data from IP!');
+
+            const data = await res.json();
+            if (!data) throw new Error('Failed to fetch location data from IP!');
+
+            this.setState({ location: data });
+        } catch (error) {
+            console.error('Unable to fetch location from IP!', error);
+        }
+    };
 
     private handleLogin = async (): Promise<void> => {
-        const { email, password } = this.state;
+        const { email, password, location, authcode } = this.state;
         Keyboard.dismiss();
 
         try {
             this.setState({ loading: true });
 
             await Defaults.IS_NETWORK_AVAILABLE();
-            if (!email || !password) throw new Error("please provide email and password to continue");
+            if (!email || !password || !Validate.Email(email)) throw new Error("please provide email and password to continue");
 
             const res = await fetch(`${Defaults.API}/auth/login`, {
                 method: 'POST',
-                headers: { ...Defaults.HEADERS },
-                body: JSON.stringify({ email, password }),
-            });
-
-            const data: ILoginResponse = await res.json();
-
-            if (data.status === "error") throw new Error(data.message || "Invalid login credentials");
-
-            if (!data.accessToken) throw new Error('Unable to process login response right now, please try again.');
-
-            const response = await fetch(`${Defaults.API}/users/`, {
-                method: 'GET',
                 headers: {
                     ...Defaults.HEADERS,
-                    'Authorization': `Bearer ${data.accessToken}`
+                    'x-wealthx-handshake': this.session.client.publicKey,
+                    'x-wealthx-deviceid': this.session.deviceid,
+                    'x-wealthx-location': location ? `${location?.region}, ${location?.country}` : "Unknown",
+                    'x-wealthx-ip': location?.ip || "Unknown",
+                    'x-wealthx-devicename': this.session.devicename,
                 },
+                body: JSON.stringify({ email: email, password: password, code: authcode }),
             });
 
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const data: IResponse = await res.json();
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
+                if (!data.handshake) throw new Error('Unable to process login response right now, please try again.');
+                const parseData = Defaults.PARSE_DATA(data.data, this.session.client.privateKey, data.handshake);
+                const authorization: string = parseData.authorization;
 
-            const udata: UserData = await response.json();
+                const res = await fetch(`${Defaults.API}/user`, {
+                    method: 'GET',
+                    headers: {
+                        ...Defaults.HEADERS,
+                        'x-wealthx-handshake': this.session.client.publicKey,
+                        'x-wealthx-deviceid': this.session.deviceid,
+                        Authorization: `Bearer ${authorization}`,
+                    },
+                });
 
-            await sessionManager.login({
-                ...this.session,
-                accessToken: data.accessToken,
-                refreshToken: data.refreshToken,
-                expiresIn: data.expiresIn,
-                isLoggedIn: true,
-                user: udata.data?.user,
-            });
+                const userdata: IResponse = await res.json();
+                if (userdata.status === Status.ERROR) throw new Error(userdata.message || userdata.error);
+                if (userdata.status === Status.SUCCESS) {
+                    if (!userdata.handshake) throw new Error('Unable to process login response right now, please try again.');
+                    const userParseData: IUser = Defaults.PARSE_DATA(userdata.data, this.session.client.privateKey, userdata.handshake);
+                    await sessionManager.updateSession({
+                        ...this.session,
+                        isRegistred: true,
+                        authorization: authorization,
+                        isLoggedIn: true,
+                        user: userParseData,
+                    });
 
-            router.navigate('/dashboard');
+                    if (userParseData.isSuspended) {
+                        router.navigate('/suspend');
+                    } else {
+                        router.navigate('/dashboard');
+                    }
+                }
+            };
 
         } catch (error: any) {
             logger.error('Failed to login:', error.message);
-            Toast.show({
-                type: 'error',
-                text1: 'Login',
-                text2: error.message || `Login failed, check email and password and try again`,
-                text1Style: { fontSize: 16, fontFamily: 'AeonikBold' },
-                text2Style: { fontSize: 12, fontFamily: 'AeonikRegular' },
-            });
+            Defaults.TOAST(error.message, "Login");
         } finally {
             this.setState({ loading: false, password: "" });
         }
     }
 
     render(): React.ReactNode {
-        const { email, password, loading } = this.state;
+        const { email, password, loading, authmodal } = this.state;
         return (
             <>
                 <Stack.Screen options={{ title: this.title, headerShown: false }} />
@@ -142,12 +178,18 @@ export default class LoginScreen extends React.Component<IProps, IState> {
 
                         <ThemedView style={{ gap: 20, }}>
                             <ThemedView style={{ marginTop: 34, width: "100%" }}>
-                                <PrimaryButton
-                                    Gradient
-                                    title={loading ? "Logging In..." : "Log In"}
-                                    onPress={this.handleLogin}
-                                    disabled={loading} >
-                                </PrimaryButton>
+                                {email.length > 0 && password.length > 0 && !loading
+                                    ? <PrimaryButton
+                                        Gradient
+                                        title={loading ? "Logging In..." : "Log In"}
+                                        onPress={(): void => {
+                                            this.user?.twoFactorEnabled === true
+                                                ? this.setState({ authmodal: true })
+                                                : this.handleLogin();
+                                        }}
+                                        disabled={loading} />
+                                    : <PrimaryButton Grey disabled title={loading ? "Logging In..." : "Log In"} onPress={() => { }} />
+                                }
                             </ThemedView>
                             <Pressable style={{ alignSelf: 'center' }} onPress={() => router.navigate('/onboarding/login')}>
                                 <ThemedText style={[styles.forgotPasswordText, { color: Colors.blue }]}>Forgot Password</ThemedText>
@@ -160,6 +202,14 @@ export default class LoginScreen extends React.Component<IProps, IState> {
 
                     </ThemedView>
 
+                    <TwoFAModal
+                        visible={authmodal}
+                        onClose={() => this.setState({ authmodal: false })}
+                        onPinComplete={(pin: string) => {
+                            this.setState({ authcode: pin });
+                            this.handleLogin();
+                        }}
+                    />
                     <LoadingModal loading={loading} />
                 </ThemedSafeArea>
             </>

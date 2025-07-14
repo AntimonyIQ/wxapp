@@ -1,7 +1,7 @@
 import React from "react";
 import { router, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { Appearance, ColorSchemeName, Platform, Pressable, View } from "react-native";
+import { Platform, Pressable, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Image } from "expo-image";
 import ThemedText from "@/components/ThemedText";
@@ -13,7 +13,6 @@ interface IProps { }
 interface IState { }
 
 export default class RegisterSuccessScreen extends React.Component<IProps, IState> {
-    private appreance: ColorSchemeName = Appearance.getColorScheme();
     private readonly title = "Account Success";
     constructor(props: IProps) {
         super(props);
@@ -29,10 +28,10 @@ export default class RegisterSuccessScreen extends React.Component<IProps, IStat
                     flex: 1,
                     paddingTop: Platform.OS === 'android' ? 50 : 0,
                 }}>
-                    <ThemedView style={{ flex: 1, height: "100%", alignItems: 'center', justifyContent: 'center' }}>
+                    <ThemedView style={{ backgroundColor: 'white', flex: 1, height: "100%", alignItems: 'center', justifyContent: 'center' }}>
 
                         <LinearGradient
-                            colors={['rgba(255, 255, 255, 0.3)', 'rgba(64, 65, 78, 0.6)']}
+                            colors={['#F1F1F1CE', '#F1F1F1CE']}
                             locations={[0.5, 1]}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 0 }}
@@ -46,7 +45,7 @@ export default class RegisterSuccessScreen extends React.Component<IProps, IStat
                             }}
                         />
                         <LinearGradient
-                            colors={['rgba(255, 255, 255, 0.3)', 'rgba(64, 65, 78, 0.6)']}
+                            colors={['#FFFFFF99', '#FFFFFF99']}
                             locations={[0, 1]}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 0 }}
@@ -73,21 +72,22 @@ export default class RegisterSuccessScreen extends React.Component<IProps, IStat
                             borderTopLeftRadius: 20,
                             borderTopRightRadius: 20,
                             paddingHorizontal: 8,
+                            backgroundColor: '#f5f5f5f5',
                         }}
                     >
                         <Pressable
-                            onPress={() => router.navigate("/onboarding/login")}
+                            onPress={() => router.navigate("/onboarding")}
                             style={{
                                 padding: 4,
                                 borderRadius: 99,
                                 marginTop: 18,
-                                backgroundColor: this.appreance === "dark" ? "#333333" : '#e7e7e7',
+                                backgroundColor: '#e7e7e7',
                                 right: 10,
                                 alignSelf: 'flex-end',
                             }}>
                             <Image
                                 source={require("../../assets/icons/close.svg")}
-                                tintColor={this.appreance === "dark" ? "#fff" : "#000"}
+                                tintColor={"#000"}
                                 style={{ width: 20, height: 20 }} />
                         </Pressable>
 
@@ -162,7 +162,7 @@ export default class RegisterSuccessScreen extends React.Component<IProps, IStat
 
                     </ThemedView>
                 </ThemedSafeArea>
-                <StatusBar style={this.appreance === "dark" ? "light" : "dark"} />
+                <StatusBar style={"dark"} />
             </>
         )
     }

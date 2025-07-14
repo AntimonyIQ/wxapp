@@ -1,9 +1,20 @@
+// This is part for the Wealthx Mobile Application.
+// Copyright © 2023 WealthX. All rights reserved.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// http://www.apache.org/licenses/LICENSE-2.0
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 import React from "react";
 import sessionManager from "@/session/session";
 import logger from "@/logger/logger";
 import { Href, router, Stack } from "expo-router";
 import { Appearance, ColorSchemeName, Linking, Platform, Share, StyleSheet, TouchableOpacity } from "react-native";
-import { Colors } from "@/constants/Colors";
 import { Image } from "expo-image";
 import DialogModal from "@/components/modals/dialog";
 import ProfileButton from "@/components/button/profile";
@@ -11,6 +22,7 @@ import { UserData } from "@/interface/interface";
 import ThemedSafeArea from "@/components/ThemeSafeArea";
 import ThemedView from "@/components/ThemedView";
 import ThemedText from "@/components/ThemedText";
+import { StatusBar } from "expo-status-bar";
 
 interface IProps { }
 
@@ -46,9 +58,9 @@ export default class AccountSettingScreen extends React.Component<IProps, IState
                             onPress={() => router.back()}
                         >
                             <Image
-                                source={require("../../assets/icons/chevron-left.svg")}
+                                source={require("../../assets/icons/chevron_right.svg")}
                                 style={styles.backIcon}
-                                tintColor={this.appreance === "dark" ? Colors.light.background : "#000000"} />
+                                tintColor={"#000000"} />
                             <ThemedText style={styles.backText}>Back</ThemedText>
                         </TouchableOpacity>
                         <ThemedText style={styles.title}>Account settings</ThemedText>
@@ -66,12 +78,16 @@ export default class AccountSettingScreen extends React.Component<IProps, IState
                                     backgroundColor: this.appreance === "dark" ? '#090909' : '#F7F7F7'
                                 }}>
                                 <ProfileButton text={'Change Password'} onPress={() => router.navigate('/forget' as Href)} />
-                                <ProfileButton text={'Delete Account'} hideBorder={true} onPress={() => this.setState({ deleted: true })} />
+                                <ProfileButton text={'Disable Account'} onPress={() => router.navigate('/forget' as Href)} />
+                                <ProfileButton text={'Setup Passkey Authentication'} onPress={() => this.setState({ deleted: true })} />
+                                <ProfileButton text={'Biometric Authentication'} onPress={() => this.setState({ deleted: true })} />
+                                <ProfileButton text={'2FA Authentication'} onPress={() => this.setState({ deleted: true })} />
+                                <ProfileButton text={'Logout'} textColor={"#FF0000"} hideBorder={true} onPress={() => this.setState({ deleted: true })} />
                             </ThemedView>
                         </ThemedView>
 
                         <ThemedView style={{ gap: 12, marginTop: 40 }}>
-                            <ThemedText>Account services</ThemedText>
+                            <ThemedText>Other services</ThemedText>
                             <ThemedView
                                 style={{
                                     padding: 8,
@@ -87,9 +103,10 @@ export default class AccountSettingScreen extends React.Component<IProps, IState
                                         message: this.store_link,
                                     });
                                 }} />
-                                <ProfileButton text={'Help'} hideBorder={true} onPress={() => {
+                                <ProfileButton text={'Help'} onPress={() => {
                                     Linking.openURL('https://wealthx.app/faq').catch((err) => console.error('Error opening URL:', err));
                                 }} />
+                                <ProfileButton textColor={"#FF0000"} text={'Delete Account'} hideBorder={true} onPress={() => this.setState({ deleted: true })} />
                             </ThemedView>
                         </ThemedView>
                     </ThemedView>
@@ -106,6 +123,7 @@ export default class AccountSettingScreen extends React.Component<IProps, IState
                             router.dismissTo("/");
                         })}
                         onCancel={() => this.setState({ deleted: !deleted })} />
+                    <StatusBar style="dark" />
                 </ThemedSafeArea>
             </>
         );
@@ -126,14 +144,15 @@ const styles = StyleSheet.create({
     backButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: Appearance.getColorScheme() === "dark" ? "#000000" : '#f7f7f7',
+        backgroundColor: '#f7f7f7',
         borderRadius: 99,
         paddingVertical: 5,
         paddingRight: 20,
+        paddingLeft: 5,
     },
     backIcon: {
-        height: 24,
-        width: 24,
+        height: 23,
+        width: 23,
     },
     backText: {
         fontFamily: 'AeonikRegular',
@@ -183,7 +202,7 @@ const styles = StyleSheet.create({
         padding: 8,
         borderRadius: 12,
         gap: 8,
-        backgroundColor: Appearance.getColorScheme() ? '#0a0a0a' : 'white',
+        backgroundColor: 'white',
     },
     deleteButton: {
         paddingHorizontal: 12,

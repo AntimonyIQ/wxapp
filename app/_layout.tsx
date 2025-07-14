@@ -19,7 +19,6 @@ import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import Toast from 'react-native-toast-message';
 import { Appearance, Platform, Dimensions, View, Text } from 'react-native';
-import sessionManager from '@/session/session';
 
 SplashScreen.preventAutoHideAsync();
 

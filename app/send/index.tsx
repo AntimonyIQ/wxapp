@@ -1,9 +1,20 @@
+// This is part for the Wealthx Mobile Application.
+// Copyright © 2023 WealthX. All rights reserved.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// http://www.apache.org/licenses/LICENSE-2.0
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 import React from "react";
 import sessionManager from "@/session/session";
 import logger from "@/logger/logger";
 import { router, Stack } from "expo-router";
 import { ActivityIndicator, Appearance, ColorSchemeName, Keyboard, Platform, Pressable, StyleSheet, TouchableOpacity } from "react-native";
-import { Colors } from "@/constants/Colors";
 import { Image } from "expo-image";
 import Defaults from "../default/default";
 import MessageModal from "@/components/modals/message";
@@ -18,78 +29,87 @@ import {
     scheduleNotification
 } from "@/notifications/notification";
 import AmountField from "@/components/inputs/amount";
-import { ITransaction, UserData } from "@/interface/interface";
-import { Coin } from "@/enums/enums";
+import { IList, ILocation, IMarket, IResponse, UserData } from "@/interface/interface";
+import { BlockchainNetwork, Coin, Status, WalletType } from "@/enums/enums";
 import ThemedSafeArea from "@/components/ThemeSafeArea";
 import ThemedView from "@/components/ThemedView";
 import ThemedText from "@/components/ThemedText";
+import Handshake from "@/handshake/handshake";
 
 interface IProps { }
 
 interface IState {
-    NGN_BALANCE: number;
     loading: boolean;
-    transactions: Array<ITransaction>;
-    refreshing: boolean;
     bottomsheet: boolean;
-    gasFee: number;
-    loadingGasFee: boolean;
-    fee_loading: boolean;
     error_modal: boolean;
     error_title: string;
     error_message: string;
     pin_modal: boolean;
     pin: string;
+    twofa: string;
+    twofamodal: boolean;
     amount: string;
     cryptoAmount: number;
     confirm_modal: boolean;
     expoPushToken: string;
-    rate: number;
-    wealthxFee: number;
+    asset: IMarket;
+    location: ILocation | null;
 }
 
 export default class SendScreen extends React.Component<IProps, IState> {
     private session: UserData = sessionManager.getUserData();
     private appreance: ColorSchemeName = Appearance.getColorScheme();
     private readonly title = "Send Screen";
-    private coin: ISelectedCoin;
-    private send: ISend;
     private notificationListener: any;
     private responseListener: any;
     constructor(props: IProps) {
         super(props);
         this.state = {
-            NGN_BALANCE: 0,
             pin: "",
             loading: false,
             pin_modal: false,
             error_modal: false,
             error_title: "",
             error_message: "",
-            loadingGasFee: false,
-            fee_loading: false,
-            transactions: [],
-            refreshing: false,
             bottomsheet: false,
-            gasFee: 0,
             amount: "",
             cryptoAmount: 0,
             confirm_modal: false,
             expoPushToken: "",
-            rate: 0,
-            wealthxFee: 0,
+            twofa: "",
+            twofamodal: false,
+            location: null,
+            asset: {
+                currency: Coin.BTC,
+                name: "",
+                categorie: WalletType.CRYPTO,
+                network: BlockchainNetwork.ETHEREUM,
+                address: "",
+                price: 0,
+                balance: 0,
+                balanceUsd: 0,
+                icon: "",
+                percent_change_24h: 0,
+                volume_change_24h: 0,
+                market_cap: 0,
+                active: false
+            }
         };
-        if (!this.session || !this.session.isLoggedIn) {
+
+        const login: boolean = Defaults.LOGIN_STATUS();
+        if (!login) {
             logger.log("Session not found. Redirecting to login screen.");
-            router.dismissTo("/");
+            router.dismissTo(this.session.user?.passkeyEnabled === true ? "/passkey" : '/onboarding/login');
+            return;
         };
-        this.coin = this.session.selectedCoin;
-        this.send = this.session.sendTransaction;
     }
 
-    componentDidMount(): void {
+    public componentDidMount(): void {
+        const { currency, network } = this.session.params;
+        const asset: IMarket = Defaults.FIND_MARKET(currency, network);
+        this.setState({ asset });
+        this.geolocation();
         registerForPushNotificationsAsync().then(token => this.setState({ expoPushToken: token ? token : "" }));
-        this.getTxFees();
 
         this.notificationListener = addNotificationReceivedListener(notification => {
             logger.log("notification: ", notification);
@@ -105,25 +125,33 @@ export default class SendScreen extends React.Component<IProps, IState> {
         removeNotificationSubscription(this.responseListener);
     };
 
+    private geolocation = async () => {
+        try {
+            const res = await fetch('https://ipapi.co/json/', {
+                method: 'GET',
+                headers: { "Accept": "application/json" }
+            });
+
+            if (!res.ok) throw new Error('Failed to fetch location data from IP!');
+
+            const data = await res.json();
+            if (!data) throw new Error('Failed to fetch location data from IP!');
+
+            this.setState({ location: data });
+        } catch (error) {
+            console.error('Unable to fetch location from IP!', error);
+        }
+    };
+
     private confirm = async (): Promise<void> => {
-        const { gasFee, wealthxFee, cryptoAmount, amount } = this.state;
-        const { currency, address } = this.coin;
+        const { cryptoAmount, asset, amount } = this.state;
         try {
             Keyboard.dismiss();
-
-            const totalFee: number = gasFee + wealthxFee;
-            const total_amount: number = cryptoAmount + totalFee;
-
-            const user: UserDocument = this.session.user;
-
-            if (user.userType === UserType.USER) {
-                if (!cryptoAmount || cryptoAmount <= 0) throw new Error("Please enter an amount to send");
-                if (address.balance <= total_amount) throw new Error(`Insufficient ${currency.symbol} balance`);
-                if ((currency.symbol === Coin.USDT || currency.symbol === Coin.USDC) && parseFloat(amount) < 10) throw new Error("Minimum amount to send is $10");
-                if (currency.symbol === Coin.BTC && parseFloat(amount) < 20) throw new Error(`Minimum amount to send is $20 for ${currency.symbol}`);
-                if (currency.symbol === Coin.ETH && parseFloat(amount) < 20) throw new Error(`Minimum amount to send is $20 for ${currency.symbol}`);
-                if (totalFee > cryptoAmount) throw new Error(`Insufficient Amount for gas fee`);
-            }
+            if (!cryptoAmount || cryptoAmount <= 0) throw new Error("Please enter an amount to send");
+            if (asset.balance <= cryptoAmount) throw new Error(`Insufficient ${asset.currency} balance`);
+            if ((asset.currency === Coin.USDT || asset.currency === Coin.USDC) && parseFloat(amount) < 10) throw new Error("Minimum amount to send is $10");
+            if (asset.currency === Coin.BTC && parseFloat(amount) < 20) throw new Error(`Minimum amount to send is $20 for ${asset.currency}`);
+            if (asset.currency === Coin.ETH && parseFloat(amount) < 20) throw new Error(`Minimum amount to send is $20 for ${asset.currency}`);
 
             this.setState({ confirm_modal: true });
         } catch (error: any) {
@@ -132,79 +160,98 @@ export default class SendScreen extends React.Component<IProps, IState> {
         }
     }
 
-    private confirm_data = (): Array<IConfirmData> => {
-        const { gasFee, wealthxFee, amount, rate, cryptoAmount } = this.state;
-        const { currency, address } = this.coin;
-        const totalFee: number = gasFee + wealthxFee;
-        const totalFeeUsd: number = Number(totalFee) / rate;
+    private confirm_data = (): Array<Partial<IList>> => {
+        const { asset, cryptoAmount } = this.state;
+        const { params } = this.session;
         return [
-            { title: "Transfer fees", details: `${totalFee} ${currency.symbol} ( ~$${totalFeeUsd}) Fast` },
-            { title: "Provider", details: "wealthx" },
-            { title: "From", details: address.address.slice(0, 8) + "..." + address.address.slice(-8) },
-            { title: "To", details: this.send.address.slice(0, 8) + "..." + this.send.address.slice(-8) },
-            { title: "Amount", details: `${(currency.symbol === Coin.USDC || currency.symbol === Coin.USDT) ? cryptoAmount.toFixed(2) : cryptoAmount.toFixed(8)} ${currency.symbol}` },
+            { name: "Transfer fees", description: `0 ${asset.currency} ( ~$(0) Fast` },
+            { name: "Provider", description: "wealthx" },
+            { name: "From", description: asset.address.slice(0, 8) + "..." + asset.address.slice(-8) },
+            { name: "To", description: (params.toaddress || "").slice(0, 8) + "..." + (params.toaddress || "").slice(-8) },
+            { name: "Amount", description: `${(asset.currency === Coin.USDC || asset.currency === Coin.USDT) ? cryptoAmount.toFixed(2) : cryptoAmount.toFixed(8)} ${asset.currency}` },
         ];
     };
 
     private handleAmountChange = async (amount: string): Promise<void> => {
-        const { rate } = this.state;
-
-        const cryptoAmount: number = Number(amount) / rate;
+        const cryptoAmount: number = Number(amount) / this.state.asset.price;
         this.setState({ amount: amount, cryptoAmount });
-
-        await this.estimategas();
     }
 
     private sendTransaction = async (): Promise<void> => {
-        const { currency } = this.coin;
-        const { gasFee, cryptoAmount, pin, amount } = this.state;
+        const { cryptoAmount, pin, location, asset } = this.state;
+        const { toaddress } = this.session.params;
         try {
             Keyboard.dismiss();
             this.setState({ loading: true });
             await Defaults.IS_NETWORK_AVAILABLE();
 
-            const value: number = currency.symbol === Coin.USDC || currency.symbol === Coin.USDT ? parseFloat(cryptoAmount.toFixed(2)) : parseFloat(cryptoAmount.toFixed(8));
-            const totalFee: number = gasFee + this.state.wealthxFee;
-            const totalvalue: number = value + totalFee;
+            const login: boolean = Defaults.LOGIN_STATUS();
+            if (!login) {
+                logger.log("Session not found. Redirecting to login screen.");
+                router.dismissTo(this.session.user?.passkeyEnabled === true ? "/passkey" : '/onboarding/login');
+                return;
+            };
 
-            const newSend: ISend = { ...this.send, value: cryptoAmount, dollarValue: Number(amount) };
-            await sessionManager.updateSession({ ...this.session, sendTransaction: newSend });
-
-            const payload: string = JSON.stringify({
-                coin: currency.symbol,
-                toAddress: this.send.address,
-                amount: totalvalue,
-                pin: pin
+            const res = await fetch(`${Defaults.API}/transaction/init`, {
+                method: 'GET',
+                headers: {
+                    ...Defaults.HEADERS,
+                    'x-wealthx-handshake': this.session.client.publicKey,
+                    'x-wealthx-deviceid': this.session.deviceid,
+                    'x-wealthx-location': location ? `${location?.region}, ${location?.country}` : "Unknown",
+                    'x-wealthx-ip': location?.ip || "Unknown",
+                    'x-wealthx-devicename': this.session.devicename,
+                }
             });
 
-            const response = await fetch(`${Defaults.API}/blockchain/send-transaction`, {
-                method: 'POST',
-                headers: { ...Defaults.HEADERS, "Authorization": `Bearer ${this.session.accessToken}` },
-                body: payload,
-            });
+            const data: IResponse = await res.json();
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
+                if (!data.handshake) throw new Error('Unable to process transaction right now, please try again.');
 
-            // if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const amountToSend = asset.currency === "USDT" || asset.currency === "USDC"
+                    ? Number(cryptoAmount).toFixed(2)
+                    : Number(cryptoAmount).toFixed(6);
 
-            const data = await response.json();
-            if (!data.success) {
-                await scheduleNotification(
-                    "Transaction Failed",
-                    `Failed to send ${cryptoAmount} ${currency.symbol} to ${this.send.address}`,
-                    { type: "success" },
-                    2
-                );
+                const payload = { coin: asset.currency, toAddress: toaddress, amount: amountToSend, pin: pin };
 
-                throw new Error(data.message || "Unkown Error");
+                const secret = Handshake.secret(this.session.client.privateKey, data.handshake);
+                const body = Handshake.encrypt(JSON.stringify(payload), secret);
+
+                const res = await fetch(`${Defaults.API}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        ...Defaults.HEADERS,
+                        'x-wealthx-handshake': this.session.client.publicKey,
+                        'x-wealthx-deviceid': this.session.deviceid,
+                        'x-wealthx-location': location ? `${location?.region}, ${location?.country}` : "Unknown",
+                        'x-wealthx-ip': location?.ip || "Unknown",
+                        'x-wealthx-devicename': this.session.devicename,
+                    },
+                    body: body,
+                });
+
+                const senddata: IResponse = await res.json();
+                if (senddata.status === Status.ERROR) throw new Error(senddata.message || senddata.error);
+                if (senddata.status === Status.SUCCESS) {
+                    await scheduleNotification(
+                        "Transaction Request",
+                        `You have request to sent ${cryptoAmount} ${asset.currency} to ${toaddress}`,
+                        { type: "success" },
+                        2
+                    );
+
+                    await sessionManager.updateSession({
+                        ...this.session,
+                        params: {
+                            ...this.session.params,
+                            amount: amountToSend,
+                        }
+                    })
+
+                    router.navigate('/send/success');
+                }
             }
-
-            await scheduleNotification(
-                "Transaction Request",
-                `You have request to sent ${cryptoAmount} ${currency.symbol} to ${this.send.address}`,
-                { type: "success" },
-                2
-            );
-
-            router.navigate("/send/success");
         } catch (error: any) {
             logger.error(error.message || error);
             this.setState({ error_modal: true, error_title: "Transaction Error", error_message: error.message });
@@ -213,65 +260,8 @@ export default class SendScreen extends React.Component<IProps, IState> {
         }
     }
 
-    private estimategas = async (): Promise<void> => {
-        try {
-            this.setState({ loadingGasFee: true });
-            const { currency, address } = this.coin;
-            const { cryptoAmount } = this.state;
-
-            const response = await fetch(`${Defaults.API}/blockchain/check-gas-fee`, {
-                method: 'POST',
-                headers: { ...Defaults.HEADERS, "Authorization": `Bearer ${this.session.accessToken}` },
-                body: JSON.stringify({ currency: currency.symbol, amount: cryptoAmount, fromAddress: address.address, toAddress: this.send.address })
-            });
-
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-
-            const data = await response.json();
-
-            if (data.success === true && data.gasFee) this.setState({ gasFee: Number(parseFloat(data.gasFee).toFixed(6)) });
-        } catch (error: any) {
-            logger.log(error);
-        } finally {
-            this.setState({ loadingGasFee: false });
-        }
-    };
-
-    private getTxFees = async () => {
-        const { currency } = this.coin;
-        try {
-            this.setState({ fee_loading: true });
-            const apiSymbol = currency.symbol.toLowerCase();
-
-            const response = await fetch(`${Defaults.API}/fee?code=${apiSymbol}&isActive=true`, {
-                method: 'GET',
-                headers: { ...Defaults.HEADERS, Authorization: `Bearer ${this.session.accessToken}` }
-            });
-
-            if (!response.ok) throw new Error(`Error fetching fees rate: ${response.statusText}`);
-
-            const data = await response.json();
-
-            if (data.status === "success") {
-                const rate: number = Number(data.rate || 0);
-                const wealthxFee = data.data.find((item: { code: string; }) => item.code === apiSymbol);
-                logger.log(`wealthx Fee for ${apiSymbol}: `, wealthxFee.value);
-                logger.log("rate is: ", data.rate);
-
-                if (wealthxFee) {
-                    this.setState({ wealthxFee: Number(wealthxFee.value), rate: rate });
-                }
-            }
-        } catch (error: any) {
-            logger.log(error);
-        } finally {
-            this.setState({ fee_loading: false });
-        }
-    }
-
     render(): React.ReactNode {
-        const { currency, address } = this.coin;
-        const { loading, gasFee, cryptoAmount, error_title, confirm_modal, loadingGasFee, fee_loading, error_modal, error_message, pin_modal, amount, rate } = this.state;
+        const { loading, cryptoAmount, error_title, confirm_modal, error_modal, error_message, pin_modal, amount, asset } = this.state;
         return (
             <>
                 <Stack.Screen options={{ title: this.title, headerShown: false }} />
@@ -281,9 +271,9 @@ export default class SendScreen extends React.Component<IProps, IState> {
                             style={styles.backButton}
                             onPress={() => router.back()}>
                             <Image
-                                source={require("../../assets/icons/chevron-left.svg")}
+                                source={require("../../assets/icons/chevron_right.svg")}
                                 style={styles.backIcon}
-                                tintColor={this.appreance === "dark" ? Colors.light.background : "#000000"} />
+                                tintColor={"#000000"} />
                             <ThemedText style={styles.backText}>Back</ThemedText>
                         </TouchableOpacity>
                         <ThemedText style={styles.title}>Send</ThemedText>
@@ -293,41 +283,32 @@ export default class SendScreen extends React.Component<IProps, IState> {
                     <ThemedView style={styles.content}>
                         <AmountField
                             placeholder="0.00"
-                            balance={address.balance}
+                            balance={asset.balance}
                             title="Enter Amount"
                             showText={true}
                             value={amount}
                             onBlur={(): void => Keyboard.dismiss()}
                             onFocus={(): void => { }}
                             maxLength={9}
-                            getEquivalentAmount={(): void => { }}
-                            symbol={currency.symbol}
-                            getTransactionFee={(): void => { }}
+                            symbol={asset.currency}
                             onChangeText={this.handleAmountChange}
-                            onEquivalentAmountChange={(): void => { }}
-                            secureTextEntry={false}
                             coinRate={(): void => { }}
-                            rate={rate}
-                            currencyName={currency.name} />
+                            rate={asset.price}
+                            asset={asset}
+                            currencyName={asset.name} />
                     </ThemedView>
 
                     <ThemedView style={styles.nextButtonContainer}>
                         <ThemedView style={styles.transactionFeeContainer}>
                             <ThemedText style={styles.transactionFeeTextLeft}>Transaction fee</ThemedText>
                             <ThemedView style={{ flexDirection: "row", gap: 5, alignItems: "center" }}>
-                                {fee_loading &&
-                                    <ActivityIndicator color={"#757575"} size={18} />
-                                }
-                                <ThemedText style={styles.transactionFeeTextRight}>
-                                    {(gasFee || 0)} {currency.symbol.toUpperCase()}
-                                </ThemedText>
+                                <ThemedText style={styles.transactionFeeTextRight}>0 {asset.currency}</ThemedText>
                             </ThemedView>
                         </ThemedView>
                         <Pressable
-                            style={[styles.nextButton, { backgroundColor: fee_loading ? '#ccc' : '#FBA91E' }]}
+                            style={[styles.nextButton, { backgroundColor: (!amount || loading) ? "#ccc" : '#FBA91E' }]}
                             onPress={this.confirm}
-                            disabled={loadingGasFee ? loadingGasFee : fee_loading}
-                        >
+                            disabled={!amount || loading}>
                             {loading ?
                                 <ActivityIndicator color={"#FFFFFF"} /> : <ThemedText style={styles.nextButtonText}> Continue </ThemedText>
                             }
@@ -336,11 +317,10 @@ export default class SendScreen extends React.Component<IProps, IState> {
 
                     <MessageModal
                         visible={error_modal}
-                        type={MessageModalType.ERROR}
+                        type={Status.ERROR}
                         onClose={(): void => this.setState({ error_modal: !error_modal })}
                         message={{ title: error_title, description: error_message }} />
                     <LoadingModal loading={loading} />
-                    <LoadingModal loading={fee_loading} />
                     <PinModal
                         visible={pin_modal}
                         onClose={(): void => this.setState({ pin_modal: !pin_modal })}
@@ -348,12 +328,13 @@ export default class SendScreen extends React.Component<IProps, IState> {
                             await this.sendTransaction();
                         })} />
                     <ConfirmModal
+                        asset={asset}
                         visible={confirm_modal}
                         onClose={(): void => this.setState({ confirm_modal: !confirm_modal })}
                         onConfirm={(): void => this.setState({ confirm_modal: false }, async () => {
                             this.setState({ pin_modal: true });
                         })}
-                        amount={cryptoAmount.toFixed(currency.symbol === Coin.USDC || currency.symbol === Coin.USDT ? 2 : 8)}
+                        amount={cryptoAmount.toFixed(asset.currency === Coin.USDC || asset.currency === Coin.USDT ? 2 : 8)}
                         list={this.confirm_data()}
                         dollarEquiv={Number(Number(amount).toLocaleString())}>
                     </ConfirmModal>
@@ -378,7 +359,7 @@ const styles = StyleSheet.create({
     backButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: Appearance.getColorScheme() === "dark" ? '#070707' : '#f7f7f7',
+        backgroundColor: '#f7f7f7',
         borderRadius: 99,
         paddingVertical: 5,
         paddingRight: 20,

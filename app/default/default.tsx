@@ -10,10 +10,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { BlockchainNetwork, Coin, Fiat } from "@/enums/enums";
 import Handshake from "@/handshake/handshake";
-import { IMarket, IWallet, UserData } from "@/interface/interface";
+import { IMarket, UserData } from "@/interface/interface";
 import sessionManager from "@/session/session";
 import * as Network from 'expo-network';
+import { Platform } from "react-native";
 import Toast, { ToastType } from "react-native-toast-message";
 
 export default class Defaults {
@@ -26,14 +28,17 @@ export default class Defaults {
     public static readonly PACKAGE_NAME = "com.wealthx.wallet";
     public static readonly ZERO_PERCENT = "0.0%";
     public static readonly ZERO_BALANCE = "0.00";
-    public static readonly API = "https://api.v3.wealthx.app/api/v2"; // "http://localhost:5500/api/v2";
-    public static readonly API_V3 = "https://api.wealthx.app/api/v3";
+    public static readonly API = "http://api.wealthx.app/api/v3"; // "http://localhost:5500/api/v2";
     public static readonly COIN_MARKET_CAP_API = "https://pro-api.coinmarketcap.com";
     public static readonly COIN_MARKET_CAP_KEY = "dbf24205-e0c0-4a10-9e26-901d183e1fa1";
 
-    public static readonly HEADERS: { [key: string]: string } = {
+    public static readonly HEADERS = {
         "Accept": "*/*",
         "Content-Type": "application/json",
+        'User-Agent': Platform.OS === 'ios' ? 'Iphone' : 'Android',
+        'x-wealthx-client': Platform.OS === 'ios' ? 'ios.wealthx.app' : 'android.wealthx.app',
+        'x-wealthx-version': '0.1.0',
+        'x-wealthx-location': 'Unknown',
     };
 
     public static FORMAT_DATE(dateString: string | number): string {
@@ -135,7 +140,8 @@ export default class Defaults {
         const now: Date = new Date();
         const diffMinutes: number = Math.floor((now.getTime() - loginLastAt.getTime()) / 1000 / 60);
 
-        if (diffMinutes >= 60) {
+        console.log("Last loging: " + diffMinutes + " minutes ago");
+        if (diffMinutes >= 30) {
             const data: UserData = { ...session, isLoggedIn: false };
             sessionManager.updateSession(data);
             return false;
@@ -153,4 +159,16 @@ export default class Defaults {
             text2Style: { fontSize: 12, fontFamily: 'AeonikRegular' },
         });
     }
+
+    public static FIND_MARKET = (currency: Coin | Fiat, network?: BlockchainNetwork): IMarket => {
+        const session: UserData = sessionManager.getUserData();
+
+        const market: IMarket | undefined = session.markets.find((market) => {
+            return market.currency === currency && (network ? market.network === network : true);
+        });
+
+        if (!market) throw new Error('Market not found for currency: ' + currency);
+        return market;
+    };
+
 }

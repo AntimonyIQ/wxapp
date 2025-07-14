@@ -1,47 +1,84 @@
+// This is part for the Wealthx Mobile Application.
+// Copyright © 2023 WealthX. All rights reserved.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// http://www.apache.org/licenses/LICENSE-2.0
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 import React from "react";
 import sessionManager from "@/session/session";
 import logger from "@/logger/logger";
 import { Href, router, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { ActivityIndicator, Appearance, ColorSchemeName, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, TouchableOpacity } from "react-native";
-import { IMarket, ITransaction, UserData } from "@/interface/interface";
-import { Colors } from "@/constants/Colors";
+import { ActivityIndicator, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, TouchableOpacity } from "react-native";
+import { IMarket, IResponse, ITransaction, UserData } from "@/interface/interface";
 import { Image } from "expo-image";
 import GraphModal from "@/components/modals/graph";
 import Defaults from "../default/default";
 import ThemedSafeArea from "@/components/ThemeSafeArea";
 import ThemedText from "@/components/ThemedText";
 import ThemedView from "@/components/ThemedView";
-import { Coin, TransactionType } from "@/enums/enums";
+import { BlockchainNetwork, Coin, Status, TransactionType, WalletType } from "@/enums/enums";
+import ListModal from "@/components/modals/list";
 
 interface IProps { }
 
 interface IState {
-    NGN_BALANCE: number;
     loading: boolean;
     transactions: Array<ITransaction>;
     refreshing: boolean;
     bottomsheet: boolean;
+    asset: IMarket;
+    visible: boolean;
+    whichnav: "send" | "receive";
 }
 
 export default class CoinScreen extends React.Component<IProps, IState> {
     private session: UserData = sessionManager.getUserData();
-    private appreance: ColorSchemeName = Appearance.getColorScheme();
     private readonly title = "Coin Screen";
-    private coin: IMarket;
     constructor(props: IProps) {
         super(props);
-        this.state = { NGN_BALANCE: 0, loading: false, transactions: [], refreshing: false, bottomsheet: false, };
-        if (!this.session || !this.session.isLoggedIn) {
-            logger.log("Session not found. Redirecting to login screen.");
-            router.dismissTo("/");
+        this.state = {
+            loading: false,
+            transactions: [],
+            refreshing: false,
+            bottomsheet: false,
+            asset: {
+                currency: Coin.BTC,
+                name: "",
+                categorie: WalletType.CRYPTO,
+                network: BlockchainNetwork.ETHEREUM,
+                address: "",
+                price: 0,
+                balance: 0,
+                balanceUsd: 0,
+                icon: "",
+                percent_change_24h: 0,
+                volume_change_24h: 0,
+                market_cap: 0,
+                active: false
+            },
+            visible: false,
+            whichnav: "send",
         };
-        this.coin = this.session.selectedCoin;
+
+        const login: boolean = Defaults.LOGIN_STATUS();
+        if (!login) {
+            logger.log("Session not found. Redirecting to login screen.");
+            router.dismissTo(this.session.user?.passkeyEnabled === true ? "/passkey" : '/onboarding/login');
+            return;
+        };
     }
 
     componentDidMount(): void {
-        const NGN_BALANCE: number = parseFloat(this.session.NGN_BALANCE || 0);
-        this.setState({ NGN_BALANCE: NGN_BALANCE });
+        const { currency, network } = this.session.params;
+        const asset: IMarket = Defaults.FIND_MARKET(currency, network);
+        this.setState({ asset });
         this.fetchTransactionsData();
     }
 
@@ -61,22 +98,36 @@ export default class CoinScreen extends React.Component<IProps, IState> {
     private fetchTransactionsData = async () => {
         try {
             this.setState({ loading: true });
-            const { currency } = this.coin;
+            await Defaults.IS_NETWORK_AVAILABLE();
 
-            const response = await fetch(`${Defaults.API}/transactions/user/?page=1&limit=50&currency=${currency}`, {
-                method: "GET",
-                headers: { ...Defaults.HEADERS, "Authorization": `Bearer ${this.session.accessToken}` },
+            const login: boolean = Defaults.LOGIN_STATUS();
+            if (!login) {
+                logger.log("Session not found. Redirecting to login screen.");
+                router.dismissTo(this.session.user?.passkeyEnabled === true ? "/passkey" : '/onboarding/login');
+                return;
+            };
+
+            const res = await fetch(`${Defaults.API}/transaction/?page=1&limit=50&fromCurrency=${this.session.params.currency}`, {
+                method: 'GET',
+                headers: {
+                    ...Defaults.HEADERS,
+                    'x-wealthx-handshake': this.session.client?.publicKey,
+                    'x-wealthx-deviceid': this.session.deviceid,
+                    Authorization: `Bearer ${this.session.authorization}`,
+                },
             });
 
-            if (!response.ok) logger.log("response failed with status: ", response.status)
+            const data: IResponse = await res.json();
 
-            const data = await response.json();
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
+                if (!data.handshake) throw new Error('Unable to process transactions right now, please try again.');
+                const parseData = Defaults.PARSE_DATA(data.data, this.session.client?.privateKey, data.handshake);
 
-            if (data.status === "success") {
                 this.setState({
-                    transactions: data.data || [],
+                    transactions: parseData,
                 });
-            }
+            };
         } catch (error: any) {
             logger.log(error);
         } finally {
@@ -85,9 +136,8 @@ export default class CoinScreen extends React.Component<IProps, IState> {
     };
 
     render(): React.ReactNode {
-        const { currency, address, balance, price, icon, name, percent_change_24h } = this.coin;
-        const { NGN_BALANCE, loading, transactions, refreshing, bottomsheet } = this.state;
-        const dollarval: string = (balance * price).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+        const { loading, transactions, refreshing, bottomsheet, asset, visible } = this.state;
+        const dollarval: string = (asset.balance || 0).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
         return (
             <>
                 <Stack.Screen options={{ title: this.title, headerShown: false }} />
@@ -99,45 +149,59 @@ export default class CoinScreen extends React.Component<IProps, IState> {
                             onPress={() => router.back()}
                         >
                             <Image
-                                source={require("../../assets/icons/chevron-left.svg")}
+                                source={require("../../assets/icons/chevron_right.svg")}
                                 style={styles.backIcon}
-                                tintColor={this.appreance === "dark" ? Colors.light.background : "#000000"} />
+                                tintColor={"#000000"} />
                             <ThemedText style={styles.backText}>Back</ThemedText>
                         </TouchableOpacity>
-                        <ThemedText style={styles.title}>{name}</ThemedText>
+                        <ThemedText style={styles.title}>{asset.name}</ThemedText>
                         <ThemedView></ThemedView>
                     </ThemedView>
 
                     <ThemedView style={styles.infoContainer}>
                         <ThemedView style={styles.balanceContainer}>
-                            <Image source={{ uri: icon }} style={{ width: 25, height: 25 }} />
-                            <ThemedText style={styles.infoLabel}>{name} {this.showNetwork(currency as Coin)}</ThemedText>
-                            <ThemedText style={styles.balanceText}>{balance} {currency}</ThemedText>
+                            <Image source={{ uri: asset.icon }} style={{ width: 25, height: 25 }} />
+                            <ThemedText style={styles.infoLabel}>{asset.name} {this.showNetwork(asset.currency as Coin)}</ThemedText>
+                            <ThemedText style={styles.balanceText}>{asset.balance} {asset.currency}</ThemedText>
                             <ThemedText style={styles.balanceValue}>
                                 ≈ {dollarval}
                             </ThemedText>
                         </ThemedView>
 
                         <ThemedView style={styles.actionsContainer}>
-                            {currency === Coin.NGN ? null :
+                            {asset.currency === Coin.NGN ? null :
                                 <>
-                                    <TouchableOpacity style={styles.actionButtonContainer} onPress={() => router.navigate(`/send/input`)}>
+                                    <TouchableOpacity
+                                        style={styles.actionButtonContainer}
+                                        onPress={() => {
+                                            if (asset.currency === Coin.USDC || asset.currency === Coin.USDT) {
+                                                this.setState({ visible: true, whichnav: "send" });
+                                                return;
+                                            }
+                                            router.navigate(`/send/input`);
+                                        }}>
                                         <ThemedView style={styles.actionButton}>
                                             <Image
                                                 source={require("../../assets/icons/arrow-up.svg")}
                                                 style={styles.backIcon}
-                                                tintColor={this.appreance === "dark" ? Colors.light.background : "#000000"} />
+                                                tintColor={"#000000"} />
                                         </ThemedView>
                                         <ThemedText style={styles.actionText}>Send</ThemedText>
                                     </TouchableOpacity>
                                     <TouchableOpacity
-                                        onPress={() => router.navigate('/coin/receive')}
+                                        onPress={() => {
+                                            if (asset.currency === Coin.USDC || asset.currency === Coin.USDT) {
+                                                this.setState({ visible: true, whichnav: "receive" });
+                                                return;
+                                            }
+                                            router.navigate('/coin/receive');
+                                        }}
                                         style={styles.actionButtonContainer}>
                                         <ThemedView style={styles.actionButton}>
                                             <Image
                                                 source={require("../../assets/icons/arrow-down.svg")}
                                                 style={styles.backIcon}
-                                                tintColor={this.appreance === "dark" ? Colors.light.background : "#000000"} />
+                                                tintColor={"#000000"} />
                                         </ThemedView>
                                         <ThemedText style={styles.actionText}>Receive</ThemedText>
                                     </TouchableOpacity>
@@ -148,13 +212,13 @@ export default class CoinScreen extends React.Component<IProps, IState> {
                                     <Image
                                         source={require("../../assets/icons/refresh.svg")}
                                         style={[styles.backIcon]}
-                                        tintColor={this.appreance === "dark" ? Colors.light.background : "#000000"} />
+                                        tintColor={"#000000"} />
                                 </ThemedView>
                                 <ThemedText style={styles.actionText}>Swap</ThemedText>
                             </TouchableOpacity>
                         </ThemedView>
 
-                        <ThemedView style={{ width: '100%', height: 1, backgroundColor: this.appreance === "dark" ? '#202020' : '#E8E8E8' }} />
+                        <ThemedView style={{ width: '100%', height: 1, backgroundColor: '#E8E8E8' }} />
 
                         <ThemedView style={{ marginTop: 25, paddingHorizontal: 16, paddingBottom: 10 }}>
                             <ThemedText
@@ -290,7 +354,7 @@ export default class CoinScreen extends React.Component<IProps, IState> {
                                                     }}
                                                 >
                                                     {transaction.type === TransactionType.TRANSFER ? "-" : "+"}
-                                                    {(transaction.amount * price).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+                                                    {(transaction.amount * asset.price).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
                                                 </ThemedText>
                                                 <ThemedText
                                                     style={{
@@ -299,7 +363,7 @@ export default class CoinScreen extends React.Component<IProps, IState> {
                                                         fontFamily: 'AeonikRegular',
                                                     }}
                                                 >
-                                                    {transaction.amount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 8 })} {currency}
+                                                    {transaction.amount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 8 })} {asset.currency}
                                                 </ThemedText>
                                             </ThemedView>
                                         </ThemedView>
@@ -310,6 +374,26 @@ export default class CoinScreen extends React.Component<IProps, IState> {
 
                     </ThemedView>
 
+                    <ListModal
+                        visible={visible}
+                        lists={[
+                            { name: "TRON Blockchain network", description: BlockchainNetwork.TRON, icon: "https://s2.coinmarketcap.com/static/img/coins/64x64/1958.png" },
+                            { name: "Binance Smart Chain", description: BlockchainNetwork.BSC, icon: "https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png" }
+                        ]}
+                        onClose={() => this.setState({ visible: false })}
+                        listChange={async (item) => {
+                            const { whichnav } = this.state;
+                            this.setState({ visible: false });
+                            if (whichnav === "send") {
+                                await sessionManager.updateSession({ ...this.session, params: { currency: asset.currency, network: item.description as BlockchainNetwork } })
+                                router.navigate('/send/input');
+                            } else {
+                                await sessionManager.updateSession({ ...this.session, params: { currency: asset.currency, network: item.description as BlockchainNetwork } })
+                                router.navigate('/coin/receive');
+                            }
+                        }}
+                        showSearch={true} />
+
                     <Pressable
                         onPress={() => this.setState({ bottomsheet: !bottomsheet })}
                         style={{
@@ -318,7 +402,7 @@ export default class CoinScreen extends React.Component<IProps, IState> {
                             width: '100%',
                             backgroundColor: "#FFF"
                         }}>
-                        <ThemedView style={{ width: '100%', height: 1, backgroundColor: this.appreance === "dark" ? '#202020' : '#E8E8E8' }} />
+                        <ThemedView style={{ width: '100%', height: 1, backgroundColor: '#E8E8E8' }} />
                         <ThemedView
                             style={{
                                 flexDirection: 'row',
@@ -333,7 +417,7 @@ export default class CoinScreen extends React.Component<IProps, IState> {
                                         fontFamily: 'AeonikRegular',
                                         lineHeight: 14,
                                     }}>
-                                    Current {currency} price
+                                    Current {asset.currency} price
                                 </ThemedText>
                                 <ThemedView
                                     style={{ flexDirection: 'row', gap: 4, alignItems: 'center' }}>
@@ -342,16 +426,16 @@ export default class CoinScreen extends React.Component<IProps, IState> {
                                             fontFamily: 'AeonikMedium',
                                             fontSize: 24,
                                         }}>
-                                        {price.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+                                        {asset.price.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
                                     </ThemedText>
                                     <ThemedText
                                         style={{
                                             fontFamily: 'AeonikMedium',
                                             fontSize: 12,
-                                            color: percent_change_24h >= 0 ? '#0A7826' : 'red',
+                                            color: asset.percent_change_24h >= 0 ? '#0A7826' : 'red',
                                         }}
                                     >
-                                        {percent_change_24h >= 0 && '+'}{percent_change_24h}%
+                                        {asset.percent_change_24h >= 0 && '+'}{asset.percent_change_24h}%
                                     </ThemedText>
                                 </ThemedView>
                             </ThemedView>
@@ -359,13 +443,13 @@ export default class CoinScreen extends React.Component<IProps, IState> {
                                 <Image
                                     source={require("../../assets/icons/chevron-left.svg")}
                                     style={[styles.backIcon, { transform: [{ rotate: "90deg" }] }]}
-                                    tintColor={this.appreance === "dark" ? Colors.light.background : "#000000"} />
+                                    tintColor={"#000000"} />
                             </Pressable>
                         </ThemedView>
-                        <GraphModal currency={this.coin} visible={bottomsheet} onClose={() => this.setState({ bottomsheet: false })} />
+                        <GraphModal asset={asset} visible={bottomsheet} onClose={() => this.setState({ bottomsheet: false })} />
                     </Pressable>
 
-                    <StatusBar style={this.appreance === "dark" ? 'light' : "dark"} />
+                    <StatusBar style={"dark"} />
                 </ThemedSafeArea>
             </>
         )
@@ -386,14 +470,14 @@ const styles = StyleSheet.create({
     backButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: Appearance.getColorScheme() === "dark" ? "#000000" : '#f7f7f7',
+        backgroundColor: '#f7f7f7',
         borderRadius: 99,
         paddingVertical: 5,
         paddingRight: 20,
     },
     backIcon: {
-        height: 24,
-        width: 24,
+        height: 20,
+        width: 20,
     },
     backText: {
         fontFamily: 'AeonikRegular',
@@ -415,18 +499,18 @@ const styles = StyleSheet.create({
         gap: 8
     },
     infoLabel: {
-        color: Appearance.getColorScheme() === "dark" ? '#F5F5F5' : '#757575',
+        color: '#757575',
         fontSize: 12,
         lineHeight: 14,
         fontFamily: 'AeonikRegular',
     },
     balanceText: {
-        color: Appearance.getColorScheme() === "dark" ? '#F5F5F5' : '#1F1F1F',
+        color: '#1F1F1F',
         fontFamily: 'AeonikMedium',
         fontSize: 20,
     },
     balanceValue: {
-        color: Appearance.getColorScheme() === "dark" ? '#b0b0b0' : '#757575',
+        color: '#757575',
         fontSize: 12,
         lineHeight: 14,
         fontFamily: 'AeonikMedium',
@@ -444,7 +528,7 @@ const styles = StyleSheet.create({
     },
     actionButton: {
         padding: 14,
-        backgroundColor: Appearance.getColorScheme() === "dark" ? "#000000" : '#f7f7f7',
+        backgroundColor: '#f7f7f7',
         borderRadius: 99,
         justifyContent: 'center',
         alignItems: 'center',

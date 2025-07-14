@@ -14,7 +14,7 @@ import logger from '@/logger/logger';
 import { Stack } from 'expo-router';
 import React from 'react';
 
-export default class AccountLayout extends React.Component {
+export default class SuspendLayout extends React.Component {
 
     componentDidMount(): void {
         logger.clear();

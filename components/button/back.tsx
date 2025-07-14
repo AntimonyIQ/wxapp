@@ -1,9 +1,9 @@
-import { Appearance, ColorSchemeName, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Appearance, ColorSchemeName, StyleSheet, TouchableOpacity, View } from 'react-native';
 import React from 'react';
 import { Colors } from '@/constants/Colors';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { ThemedText } from '../ThemedText';
+import ThemedText from '../ThemedText';
 interface BackButtonProps {
     title: string;
     subtitle?: string;
@@ -35,10 +35,10 @@ class BackButton extends React.Component<BackButtonProps> {
                         style={styles.backbutton}
                         onPress={() => router.back()}
                     >
-                        <Image 
-                            source={require("../../assets/icons/chevron-left.svg")} 
+                        <Image
+                            source={require("../../assets/icons/chevron_right.svg")}
                             style={{ height: 24, width: 24 }}
-                            contentFit="contain" tintColor={this.appreance === "dark" ? "white" : "black"}
+                            contentFit="contain" tintColor={"black"}
                             transition={1000} />
                         <ThemedText style={styles.backtext}>Back</ThemedText>
                     </TouchableOpacity>

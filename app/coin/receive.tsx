@@ -1,37 +1,72 @@
-import React from "react";
-import sessionManager from "@/session/session";
-import logger from "@/logger/logger";
-import { router, Stack } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import { Appearance, ColorSchemeName, Dimensions, Platform, Pressable, Share, StyleSheet, TouchableOpacity, Vibration } from "react-native";
-import { IMarket, UserData } from "@/interface/interface";
-import { Image } from "expo-image";
-import Defaults from "../default/default";
-import Toast from "react-native-toast-message";
-import * as Clipboard from 'expo-clipboard';
-import QRCode from 'react-native-qrcode-svg';
+// This is part for the Wealthx Mobile Application.
+// Copyright © 2023 WealthX. All rights reserved.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// http://www.apache.org/licenses/LICENSE-2.0
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+import ThemedText from "@/components/ThemedText";
 import ThemedView from "@/components/ThemedView";
 import ThemedSafeArea from "@/components/ThemeSafeArea";
-import ThemedText from "@/components/ThemedText";
+import { BlockchainNetwork, Coin, WalletType } from "@/enums/enums";
+import { IMarket, UserData } from "@/interface/interface";
+import logger from "@/logger/logger";
+import sessionManager from "@/session/session";
+import * as Clipboard from 'expo-clipboard';
+import { Image } from "expo-image";
+import { router, Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import React from "react";
+import { Appearance, ColorSchemeName, Dimensions, Platform, Pressable, Share, StyleSheet, TouchableOpacity, Vibration } from "react-native";
+import QRCode from 'react-native-qrcode-svg';
+import Toast from "react-native-toast-message";
+import Defaults from "../default/default";
 
 interface IProps { }
 
-interface IState { }
+interface IState {
+    asset: IMarket;
+}
 
 export default class ReceiveScreen extends React.Component<IProps, IState> {
     private session: UserData = sessionManager.getUserData();
     private appreance: ColorSchemeName = Appearance.getColorScheme();
     private readonly title = "Receive Screen";
-    private coin: IMarket;
     private readonly isDesktop: boolean = Platform.OS === 'web' && Dimensions.get('window').width > 600;
     constructor(props: IProps) {
         super(props);
-        this.state = {};
+        this.state = {
+            asset: {
+                currency: Coin.BTC,
+                name: "i",
+                categorie: WalletType.CRYPTO,
+                network: BlockchainNetwork.ETHEREUM,
+                address: "i",
+                price: 0,
+                balance: 0,
+                balanceUsd: 0,
+                icon: "i",
+                percent_change_24h: 0,
+                volume_change_24h: 0,
+                market_cap: 0,
+                active: false
+            }
+        };
         if (!this.session || !this.session.isLoggedIn) {
             logger.log("Session not found. Redirecting to login screen.");
             router.dismissTo("/");
         };
-        this.coin = this.session.selectedCoin;
+    }
+
+    componentDidMount(): void {
+        const { currency, network } = this.session.params;
+        const asset: IMarket = Defaults.FIND_MARKET(currency, network);
+        this.setState({ asset });
     }
 
     private showNetwork = (symbol: string): string => {
@@ -40,11 +75,11 @@ export default class ReceiveScreen extends React.Component<IProps, IState> {
     }
 
     private share = async () => {
-        const { currency, address } = this.coin;
+        const { asset } = this.state;
         try {
             await Share.share({
                 title: "Join WealthX and start trading",
-                message: `Here is my ${currency.toUpperCase()} wallet address: ${address}`,
+                message: `Here is my ${asset.currency} wallet address: ${asset.address}`,
             });
         } catch (error: any) {
             Toast.show({
@@ -65,8 +100,8 @@ export default class ReceiveScreen extends React.Component<IProps, IState> {
     }
 
     private copyToClipboard = async () => {
-        const { address } = this.coin;
-        await Clipboard.setStringAsync(address);
+        const { asset } = this.state;
+        await Clipboard.setStringAsync(asset.address);
 
         const vibrationPattern = [0, 5];
         Vibration.vibrate(vibrationPattern, false);
@@ -80,7 +115,7 @@ export default class ReceiveScreen extends React.Component<IProps, IState> {
     };
 
     render(): React.ReactNode {
-        const { currency, address, balance, icon } = this.coin;
+        const { asset } = this.state;
         return (
             <>
                 <Stack.Screen options={{ title: this.title, headerShown: false }} />
@@ -91,13 +126,13 @@ export default class ReceiveScreen extends React.Component<IProps, IState> {
                             style={styles.backButton}
                             onPress={() => router.back()}>
                             <Image
-                                source={require("../../assets/icons/chevron-left.svg")}
+                                source={require("../../assets/icons/chevron_right.svg")}
                                 tintColor={this.appreance === "dark" ? "#ffffff" : "#000000"}
                                 style={styles.backIcon} />
                             <ThemedText style={styles.backText}>Back</ThemedText>
                         </TouchableOpacity>
 
-                        <ThemedText style={styles.title}>Receive {currency}</ThemedText>
+                        <ThemedText style={styles.title}>Receive {asset.currency}</ThemedText>
                         <ThemedView></ThemedView>
                     </ThemedView>
 
@@ -108,22 +143,25 @@ export default class ReceiveScreen extends React.Component<IProps, IState> {
                                 style={{ width: 16, height: 16 }}
                             />
                             <ThemedText style={styles.infoText}>
-                                Only send {currency} {this.showNetwork(currency)} assets to this address. Any other assets
+                                Only send {asset.currency} {this.showNetwork(asset.currency)} assets to this address. Any other assets
                                 will be lost forever.
                             </ThemedText>
                         </ThemedView>
 
                         <ThemedView style={styles.qrCodeSection}>
                             <ThemedView style={styles.walletLabel}>
-                                <Image source={{ uri: currency }} style={{ width: 20, height: 20 }} />
+                                <Image source={{ uri: asset.icon }} style={{ width: 20, height: 20 }} />
                                 <ThemedText style={styles.walletLabelText}>
-                                    {currency} wallet address
+                                    {asset.currency} wallet address
                                 </ThemedText>
                             </ThemedView>
                             <ThemedView style={styles.qrCodeContainer}>
                                 <QRCode
-                                    value={address}
+                                    value={asset.address}
                                     size={this.isDesktop ? 230 : Dimensions.get('window').width * 0.6}
+                                    logo={require("../../assets/images/icon.png")}
+                                    logoSize={40}
+                                    logoBorderRadius={360}
                                 />
                             </ThemedView>
 
@@ -133,7 +171,7 @@ export default class ReceiveScreen extends React.Component<IProps, IState> {
                                         Wallet Address
                                     </ThemedText>
                                     <ThemedText style={styles.walletAddress}>
-                                        {address}
+                                        {asset.address}
                                     </ThemedText>
                                 </ThemedView>
                                 <Pressable style={styles.clearButton} onPress={this.copyToClipboard}>
@@ -143,7 +181,7 @@ export default class ReceiveScreen extends React.Component<IProps, IState> {
                                 </Pressable>
                             </Pressable>
                             <ThemedText style={{ fontFamily: 'AeonikMedium', }}>
-                                Balance: {this.formatToMoneyString(balance)} {currency}
+                                Balance: {this.formatToMoneyString(asset.balance)} {asset.currency}
                             </ThemedText>
                         </ThemedView>
                     </ThemedView>
@@ -151,7 +189,7 @@ export default class ReceiveScreen extends React.Component<IProps, IState> {
                     <ThemedView style={styles.shareButtonContainer}>
                         <Pressable style={styles.shareButton} onPress={this.share}>
                             <ThemedText style={styles.shareButtonText}>
-                                Share {currency} Address
+                                Share {asset.currency} Address
                             </ThemedText>
                         </Pressable>
                     </ThemedView>
@@ -182,8 +220,8 @@ const styles = StyleSheet.create({
         paddingRight: 20,
     },
     backIcon: {
-        height: 24,
-        width: 24,
+        height: 20,
+        width: 20,
     },
     backText: {
         fontFamily: 'AeonikRegular',

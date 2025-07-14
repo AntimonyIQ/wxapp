@@ -34,32 +34,39 @@ export default class SplashScreen extends React.Component<IProps, IState> {
     }
 
     public componentDidMount(): void {
-        this.timer = setTimeout(async () => {
-            if (this.session.isLoggedIn === true && this.session.refreshToken && this.session.passkeyEnabled === true) {
-                router.navigate('/passkey');
-            } else if (this.session.isRegistred === true) {
-                router.navigate('/onboarding/login');
-            } else {
-                const client = Handshake.generate();
-                const devicename: string = Device.deviceName || "Unknown Device";
-                const UUID = Crypto.randomUUID();
+        this.timer = setTimeout(() => this.handleSplashNavigation(), 1000);
+    }
 
-                const sessionData: UserData = {
-                    client: client,
-                    deviceid: UUID,
-                    isLoggedIn: false,
-                    isRegistred: false,
-                    devicename: devicename,
-                    user: undefined,
-                    refreshToken: "",
-                    isPasskeyEnabled: false,
-                    isVerified: false
-                };
+    private async handleSplashNavigation(): Promise<void> {
+        const { isLoggedIn, isRegistred, user } = this.session;
 
-                await sessionManager.login(sessionData);
-                router.navigate('/onboarding');
-            }
-        }, 1000);
+        if (isLoggedIn === true && user?.refreshToken && user?.passkeyEnabled === true) {
+            router.navigate('/passkey');
+            return;
+        }
+
+        if (isRegistred === true) {
+            router.navigate('/onboarding/login');
+            return;
+        }
+
+        const client = Handshake.generate();
+        const devicename = Device.deviceName ?? "Unknown Device";
+        const deviceid = Crypto.randomUUID();
+
+        const sessionData: UserData = {
+            ...this.session,
+            client,
+            deviceid,
+            devicename,
+            isLoggedIn: false,
+            isRegistred: false,
+            isVerified: false,
+            user: undefined,
+        };
+
+        await sessionManager.login(sessionData);
+        router.navigate('/onboarding');
     }
 
     public componentWillUnmount(): void {

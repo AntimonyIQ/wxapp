@@ -1,18 +1,30 @@
-import React from 'react';
-import { Appearance, Linking, StyleSheet } from 'react-native';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import sessionManager from '../../session/session';
-import logger from '@/logger/logger';
-import { router } from 'expo-router';
-import { createAvatar, Result } from '@dicebear/core';
-import { micah } from '@dicebear/collection';
-import { Image } from 'expo-image';
+// This is part for the Wealthx Mobile Application.
+// Copyright © 2023 WealthX. All rights reserved.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// http://www.apache.org/licenses/LICENSE-2.0
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 import ProfileButton from '@/components/button/profile';
 import DialogModal from '@/components/modals/dialog';
-import Toast from 'react-native-toast-message';
-import { IUser, UserData } from '@/interface/interface';
-import ThemedView from '@/components/ThemedView';
+import ParallaxScrollView from '@/components/ParallaxScrollView';
 import ThemedText from '@/components/ThemedText';
+import ThemedView from '@/components/ThemedView';
+import { IUser, UserData } from '@/interface/interface';
+import logger from '@/logger/logger';
+import { micah } from '@dicebear/collection';
+import { createAvatar, Result } from '@dicebear/core';
+import { Image } from 'expo-image';
+import { router } from 'expo-router';
+import React from 'react';
+import { Appearance, Linking, StyleSheet } from 'react-native';
+import Toast from 'react-native-toast-message';
+import sessionManager from '../../session/session';
 
 interface IProps { }
 
@@ -133,10 +145,10 @@ const styles = StyleSheet.create({
     headerImage: {
         color: '#808080',
         bottom: -90,
-        left: -35,
+        left: -25,
         position: 'absolute',
-        width: 200,
-        height: 200
+        width: 250,
+        height: 250
     },
     titleContainer: {
         flexDirection: 'row',

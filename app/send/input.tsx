@@ -1,16 +1,27 @@
-import React from "react";
-import sessionManager from "@/session/session";
-import { UserData } from "@/interface/interface";
-import { router, Stack, } from "expo-router";
-import { Appearance, ColorSchemeName, Platform, Pressable, StyleSheet, TouchableOpacity } from "react-native";
-import { } from "@/interface/interface";
-import { Colors } from "@/constants/Colors";
-import { Image } from "expo-image";
-import AddressValidator from "@/validator/address";
+// This is part for the Wealthx Mobile Application.
+// Copyright © 2023 WealthX. All rights reserved.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// http://www.apache.org/licenses/LICENSE-2.0
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 import TextField from "@/components/inputs/text";
-import ThemedView from "@/components/ThemedView";
 import ThemedText from "@/components/ThemedText";
+import ThemedView from "@/components/ThemedView";
 import ThemedSafeArea from "@/components/ThemeSafeArea";
+import { Colors } from "@/constants/Colors";
+import { UserData } from "@/interface/interface";
+import sessionManager from "@/session/session";
+import AddressValidator from "@/validator/address";
+import { Image } from "expo-image";
+import { router, Stack, } from "expo-router";
+import React from "react";
+import { Appearance, ColorSchemeName, Platform, Pressable, StyleSheet, TouchableOpacity } from "react-native";
 
 interface IProps { }
 
@@ -24,21 +35,18 @@ export default class SendInputAddressScreen extends React.Component<IProps, ISta
     private session: UserData = sessionManager.getUserData();
     private appreance: ColorSchemeName = Appearance.getColorScheme();
     private readonly title = "Send Input Address Screen";
-    private coin: ISelectedCoin;
     private validator: AddressValidator;
     constructor(props: IProps) {
         super(props);
         this.state = { valid: false, loading: false, address: "" };
-        this.coin = this.session.coin;
         this.validator = new AddressValidator();
     }
 
     public componentDidMount(): void { }
 
     private validateAddress = (address: string): void => {
-        const { currency } = this.coin;
-
-        const isValid = this.validator.address(currency.symbol, address);
+        const { currency } = this.session.params;
+        const isValid = this.validator.address(currency, address);
         this.setState({ valid: isValid });
     };
 
@@ -48,7 +56,7 @@ export default class SendInputAddressScreen extends React.Component<IProps, ISta
     };
 
     render(): React.ReactNode {
-        const { currency } = this.coin;
+        const { currency } = this.session.params;
         const { valid, address } = this.state;
         return (
             <>
@@ -59,12 +67,12 @@ export default class SendInputAddressScreen extends React.Component<IProps, ISta
                             style={styles.backButton}
                             onPress={() => router.back()}>
                             <Image
-                                source={require("../../assets/icons/chevron-left.svg")}
+                                source={require("../../assets/icons/chevron_right.svg")}
                                 style={styles.backIcon}
                                 tintColor={this.appreance === "dark" ? Colors.light.background : "#000000"} />
                             <ThemedText style={styles.backText}>Back</ThemedText>
                         </TouchableOpacity>
-                        <ThemedText style={styles.title}>Send {currency.name}</ThemedText>
+                        <ThemedText style={styles.title}>Send {currency}</ThemedText>
                         <ThemedView></ThemedView>
                     </ThemedView>
 
@@ -85,7 +93,10 @@ export default class SendInputAddressScreen extends React.Component<IProps, ISta
                     <ThemedView style={styles.nextButtonContainer}>
                         <Pressable
                             style={[styles.nextButton, { backgroundColor: valid ? '#FBA91E' : '#ccc' }]}
-                            onPress={(): void => router.navigate({ pathname: '/send', params: { address } })}
+                            onPress={async (): Promise<void> => {
+                                await sessionManager.updateSession({ ...this.session, params: { ...this.session.params, toaddress: address } });
+                                router.push("/send");
+                            }}
                             disabled={!valid}
                         >
                             <ThemedText style={styles.nextButtonText}>
@@ -114,14 +125,14 @@ const styles = StyleSheet.create({
     backButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: Appearance.getColorScheme() === "dark" ? '#070707' : '#f7f7f7',
+        backgroundColor: '#f7f7f7',
         borderRadius: 99,
         paddingVertical: 5,
         paddingRight: 20,
     },
     backIcon: {
-        height: 24,
-        width: 24,
+        height: 20,
+        width: 20,
     },
     backText: {
         fontFamily: 'AeonikRegular',

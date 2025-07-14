@@ -67,7 +67,8 @@ export interface IHKeys {
     publicKey: string;
 }
 
-export interface IUser extends mongoose.Document {
+export interface IUser {
+    _id: string;
     username: string;
     tagName: string;
     fullName: string;
@@ -356,8 +357,6 @@ export interface IStatistics {
 export interface UserData {
     user?: IUser,
     isLoggedIn: boolean,
-    refreshToken: string,
-    isPasskeyEnabled: boolean,
     isRegistred: boolean,
     isVerified: boolean,
     client: {
@@ -367,7 +366,17 @@ export interface UserData {
     deviceid: string,
     devicename: string,
     registration: IRegistration;
-    [key: string]: any;
+    authorization: string;
+    deviceId: string;
+    location: string;
+    markets: Array<IMarket>;
+    transactions: Array<ITransaction>;
+    hideBalance: boolean;
+    totalBalanceNgn: number;
+    totalBalanceUsd: number;
+    passkey: string;
+    params: IParams;
+    // [key: string]: any;
 }
 
 export interface DecodedToken {
@@ -387,8 +396,6 @@ export interface IRegistration {
     password: string;
     confirmPassword?: string;
     termsAndConditions?: boolean;
-    firstName: string;
-    lastName?: string;
     username?: string;
     country?: string;
     referralCode?: string;
@@ -397,22 +404,51 @@ export interface IRegistration {
     phoneNumber?: string;
     pin?: string;
     tagName?: string
+    countryCode: string;
     // [key: string]: any;
 }
 
+export interface IParams {
+    currency: Coin | Fiat;
+    network: BlockchainNetwork;
+    toaddress?: string;
+    amount?: string;
+    swap?: ISwap;
+}
+
 export interface ILocation {
-    country: string,
-    countryCode: string,
-    region: string,
-    regionName: string;
-    city: string;
-    zip: string;
-    lat: number;
-    lon: number;
-    timezone: string;
-    isp: string;
-    org: string;
-    as: string;
     ip: string;
-    state: string;
+    city: string;
+    region: string;
+    country: string;
+    timezone: string;
+    org: string;
+    network: string;
+    version: string;
+    region_code: string;
+    country_name: string;
+    country_code: string;
+    country_code_iso3: string;
+    country_capital: string;
+    country_tld: string;
+    continent_code: string;
+    in_eu: boolean;
+    postal: any,
+    latitude: number;
+    longitude: number;
+    utc_offset: string;
+    country_calling_code: string;
+    currency: string;
+    currency_name: string;
+    languages: string;
+    country_area: number;
+    country_population: number;
+    asn: string;
+}
+
+export interface ISwap {
+    fromValue: number;
+    toValue: number;
+    fromCurrency: Coin | Fiat;
+    toCurrency: Coin | Fiat;
 }

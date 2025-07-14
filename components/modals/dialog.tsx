@@ -1,9 +1,21 @@
+// This is part for the Wealthx Mobile Application.
+// Copyright © 2023 WealthX. All rights reserved.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// http://www.apache.org/licenses/LICENSE-2.0
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 import { Colors } from '@/constants/Colors';
 import React from 'react';
 import { Modal, TouchableOpacity, StyleSheet, TouchableWithoutFeedback, Appearance } from 'react-native';
-import { ThemedView } from '../ThemedView';
-import { ThemedText } from '../ThemedText';
 import logger from '@/logger/logger';
+import ThemedView from '../ThemedView';
+import ThemedText from '../ThemedText';
 
 interface LogoutDialogProps {
     visible: boolean;
@@ -28,10 +40,10 @@ export default class DialogModal extends React.Component<LogoutDialogProps> {
             >
                 <TouchableWithoutFeedback onPress={onCancel}>
                     <ThemedView style={styles.modalOverlay}>
-                        <TouchableWithoutFeedback onPress={() => {}}>
+                        <TouchableWithoutFeedback onPress={() => { }}>
                             <ThemedView style={styles.dialogContainer}>
                                 <ThemedText style={styles.dialogTitle}>{title}</ThemedText>
-                                {typeof message === "string" 
+                                {typeof message === "string"
                                     ? <ThemedText style={styles.dialogMessage}>{message}</ThemedText>
                                     : (message)}
                                 <ThemedView style={styles.buttonContainer}>
@@ -63,6 +75,7 @@ const styles = StyleSheet.create({
         padding: 20,
         borderRadius: 10,
         alignItems: "flex-start",
+        backgroundColor: "#FFFFFF"
     },
     dialogTitle: {
         fontSize: 18,

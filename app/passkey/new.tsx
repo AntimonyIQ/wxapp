@@ -1,24 +1,34 @@
-import React from "react";
-import sessionManager from "@/session/session";
+// This is part for the Wealthx Mobile Application.
+// Copyright © 2023 WealthX. All rights reserved.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// http://www.apache.org/licenses/LICENSE-2.0
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+import LoadingModal from "@/components/modals/loading";
+import ThemedText from "@/components/ThemedText";
+import ThemedView from "@/components/ThemedView";
+import ThemedSafeArea from "@/components/ThemeSafeArea";
 import { UserData } from "@/interface/interface";
 import logger from "@/logger/logger";
-import { router, Stack } from "expo-router";
-import { FlatList, Platform, StyleSheet, TextInput, TouchableOpacity } from "react-native";
+import sessionManager from "@/session/session";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Image } from "expo-image";
+import { router, Stack } from "expo-router";
+import React from "react";
+import { FlatList, Platform, StyleSheet, TextInput, TouchableOpacity } from "react-native";
 import Defaults from "../default/default";
-import LoadingModal from "@/components/modals/loading";
-import ThemedView from "@/components/ThemedView";
-import ThemedText from "@/components/ThemedText";
-import ThemedSafeArea from "@/components/ThemeSafeArea";
 
 interface IProps { }
 
 interface IState {
     passcode: string[];
     loading: boolean;
-    messageError: boolean;
-    message: string;
 }
 
 export default class CreateNewPasskeyScreen extends React.Component<IProps, IState> {
@@ -27,80 +37,36 @@ export default class CreateNewPasskeyScreen extends React.Component<IProps, ISta
     private pinRefs: React.RefObject<TextInput | null>[] = Array(4).fill(null).map(() => React.createRef<TextInput>());
     constructor(props: IProps) {
         super(props);
-        this.state = { passcode: Array(4).fill(""), loading: false, messageError: false, message: "" };
+        this.state = { passcode: Array(4).fill(""), loading: false };
         if (!this.session) {
             logger.log("Session not found. Redirecting to login screen.");
-        }
+        };
+
+        const login: boolean = Defaults.LOGIN_STATUS();
+        if (!login) {
+            logger.log("Session not found. Redirecting to login screen.");
+            router.dismissTo(this.session.user?.passkeyEnabled === true ? "/passkey" : '/onboarding/login');
+            return;
+        };
     }
 
     private processLoginRefresh = async () => {
         const { passcode } = this.state;
 
-        const isConn = await Defaults.IS_NETWORK_AVAILABLE();
-        console.log("is connection available: ", isConn);
-
-        if (!passcode) {
-            this.setState({ message: "Your pin is wrong please try again", messageError: true });
-            return;
-        };
-
         try {
-            this.setState({ loading: true });
-            const session = sessionManager.getUserData();
+            const login: boolean = Defaults.LOGIN_STATUS();
+            console.log({ passcode, login });
 
-            const payload = JSON.stringify({
-                passkey: passcode,
-            });
-
-            logger.log("refreshToken: ", session.refreshToken);
-
-            const response = await fetch(`${Defaults.API}/auth/refresh`, {
-                method: "POST",
-                headers: { ...Defaults.HEADERS, Cookie: `jwt=${session.refreshToken}`, },
-                body: payload,
-            });
-
-            // if (!response.ok) throw new Error(`response failed with status: ${response.status}`);
-
-            const data = await response.json();
-            logger.log("Response Data: ", data);
-            const { accessToken, refreshToken, expiresIn } = data;
-
-            if (!accessToken) throw new Error('Access token not found in response');
-
-            logger.log("accessToken: ", accessToken);
-
-            const userResponse = await fetch(`${Defaults.API}/users/`, {
-                method: 'GET',
-                headers: { ...Defaults.HEADERS, 'Authorization': `Bearer ${accessToken}`, }
-            });
-
-            if (!userResponse.ok) { throw new Error(`HTTP error! status: ${userResponse.status}`); }
-
-            const userData = await userResponse.json();
-
+            if (!passcode.join("") || passcode.join("").length < 4) throw new Error("Your pin is wrong please try again");
             await sessionManager.updateSession({
-                ...session,
-                accessToken,
-                refreshToken,
-                expiresIn,
-                isLoggedIn: true,
-                user: userData.data?.user,
-            });
-
-            router.navigate("/dashboard");
+                ...this.session,
+                passkey: passcode.join(""),
+            })
+            router.navigate("/passkey/confirm");
 
         } catch (error: any) {
-            if (error.response) {
-                const data = error.response.data;
-                logger.log("Error Response Data:", data);
-                this.setState({ message: data?.message || "Login failed, please try again", messageError: true });
-            } else if (error.request) {
-                logger.log("No Response Received:", error.request);
-            } else {
-                logger.log("Passkey Error: ", error.message);
-                this.setState({ message: "Authorization failed. Please try again or sign out if the issue persists.", messageError: true });
-            }
+            logger.log("Passkey Error: ", error.message);
+            Defaults.TOAST(error.message, "Error");
         } finally {
             this.setState({ loading: false });
         }
@@ -130,11 +96,6 @@ export default class CreateNewPasskeyScreen extends React.Component<IProps, ISta
             }
         });
     };
-
-    private signout = async () => {
-        await sessionManager.logout();
-        router.replace('/');
-    }
 
     private renderInputItem = ({ item, index }: { item: string, index: number }): React.JSX.Element => {
         return (
@@ -179,7 +140,7 @@ export default class CreateNewPasskeyScreen extends React.Component<IProps, ISta
     );
 
     render(): React.ReactNode {
-        const { passcode, loading, messageError, message } = this.state;
+        const { passcode, loading } = this.state;
         return (
             <>
                 <Stack.Screen options={{ title: this.title, headerShown: false }} />
@@ -187,7 +148,7 @@ export default class CreateNewPasskeyScreen extends React.Component<IProps, ISta
                     <ThemedView style={styles.passkeyContainer}>
 
                         <ThemedView style={styles.title}>
-                            <ThemedText style={styles.titleText}>Welcome back</ThemedText>
+                            <ThemedText style={styles.titleText}>Setup New Passkey</ThemedText>
                         </ThemedView>
 
                         <ThemedView style={styles.sub_con}>
@@ -219,18 +180,6 @@ export default class CreateNewPasskeyScreen extends React.Component<IProps, ISta
                                             horizontal={true}
                                             contentContainerStyle={styles.inputContainer}
                                         />
-                                        <ThemedText
-                                            style={{
-                                                textAlign: 'center',
-                                                fontSize: 12,
-                                                fontFamily: 'AeonikRegular',
-                                                lineHeight: 14,
-                                                marginTop: 16,
-                                                color: !messageError ? '#757575' : "#9A1C13",
-                                            }}
-                                        >
-                                            {message}
-                                        </ThemedText>
                                     </ThemedView>
                                     <FlatList
                                         data={[1, 2, 3, 4, 5, 6, 7, 8, 9, '.', 0, 'Backspace']}
@@ -317,6 +266,7 @@ const styles = StyleSheet.create({
     },
     buttonText: {
         fontSize: 32,
+        lineHeight: 36,
         fontFamily: 'AeonikMedium',
     },
 });
