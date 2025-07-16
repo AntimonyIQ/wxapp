@@ -13,15 +13,12 @@
 import React from "react";
 import sessionManager from "@/session/session";
 import { IList, IUser, UserData } from "@/interface/interface";
-import logger from "@/logger/logger";
 import { router, Stack } from "expo-router";
-import { Appearance, ColorSchemeName, Platform, Share, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { Colors } from "@/constants/Colors";
+import { Platform, SafeAreaView, Share, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Image } from "expo-image";
 import { LinearGradient } from 'expo-linear-gradient';
 import PrimaryButton from "@/components/button/primary";
 import { StatusBar } from "expo-status-bar";
-import ThemedSafeArea from "@/components/ThemeSafeArea";
 import ThemedView from "@/components/ThemedView";
 import ThemedText from "@/components/ThemedText";
 
@@ -31,15 +28,10 @@ interface IState { }
 
 export default class ReferScreen extends React.Component<IProps, IState> {
     private session: UserData = sessionManager.getUserData();
-    private appreance: ColorSchemeName = Appearance.getColorScheme();
     private readonly title = "Refer Screen";
     private user: IUser;
     constructor(props: IProps) {
         super(props);
-        if (!this.session || !this.session.isLoggedIn) {
-            logger.log("Session not found. Redirecting to login screen.");
-            router.dismissTo("/");
-        };
         this.user = this.session.user as IUser;
     }
 
@@ -88,7 +80,7 @@ export default class ReferScreen extends React.Component<IProps, IState> {
                     style={{ flex: 1, paddingTop: Platform.OS === 'android' ? 50 : Platform.OS === "web" ? 20 : 0, }}
                     start={[0, 0.98]}
                     end={[1, 1]}>
-                    <ThemedSafeArea
+                    <SafeAreaView
                         style={styles.container}>
                         <ThemedView style={styles.header}>
                             <TouchableOpacity
@@ -96,9 +88,9 @@ export default class ReferScreen extends React.Component<IProps, IState> {
                                 onPress={() => router.back()}
                             >
                                 <Image
-                                    source={require("../../assets/icons/chevron-left.svg")}
+                                    source={require("../../assets/icons/chevron_right.svg")}
                                     style={styles.backIcon}
-                                    tintColor={this.appreance === "dark" ? Colors.light.background : "#000000"} />
+                                    tintColor={"#000000"} />
                                 <ThemedText style={styles.backText}>Back</ThemedText>
                             </TouchableOpacity>
                             <ThemedText style={styles.title}>Refer and Earn</ThemedText>
@@ -189,7 +181,7 @@ export default class ReferScreen extends React.Component<IProps, IState> {
 
                         </View>
 
-                    </ThemedSafeArea>
+                    </SafeAreaView>
                     <StatusBar style='light' />
                 </LinearGradient>
             </>
@@ -213,14 +205,14 @@ const styles = StyleSheet.create({
     backButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: Appearance.getColorScheme() === "dark" ? "#000000" : '#f7f7f7',
+        backgroundColor: '#f7f7f7',
         borderRadius: 99,
         paddingVertical: 5,
         paddingRight: 20,
     },
     backIcon: {
-        height: 24,
-        width: 24,
+        height: 20,
+        width: 20,
     },
     backText: {
         fontFamily: 'AeonikRegular',
@@ -230,6 +222,7 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 16,
         fontFamily: 'AeonikBold',
+        color: "#FFF"
     },
     content: {
         marginTop: 46,

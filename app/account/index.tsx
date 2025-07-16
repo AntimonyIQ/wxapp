@@ -81,7 +81,7 @@ export default class AccountScreen extends React.Component<IProps, IState> {
                             onPress={() => router.back()}
                         >
                             <Image
-                                source={require("../../assets/icons/chevron-left.svg")}
+                                source={require("../../assets/icons/chevron_right.svg")}
                                 style={styles.backIcon}
                                 tintColor={this.appreance === "dark" ? Colors.light.background : "#000000"} />
                             <ThemedText style={styles.backText}>Back</ThemedText>
@@ -137,8 +137,8 @@ const styles = StyleSheet.create({
         paddingRight: 20,
     },
     backIcon: {
-        height: 24,
-        width: 24,
+        height: 20,
+        width: 20,
     },
     backText: {
         fontFamily: 'AeonikRegular',

@@ -414,6 +414,7 @@ export interface IParams {
     toaddress?: string;
     amount?: string;
     swap?: ISwap;
+    otp?: string;
 }
 
 export interface ILocation {

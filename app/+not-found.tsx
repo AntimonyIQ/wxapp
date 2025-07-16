@@ -10,6 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import BackButton from "@/components/button/back";
 import { Link, Stack } from "expo-router";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
@@ -32,6 +33,7 @@ export default class NotFoundScreen extends React.Component<IProps, IState> {
                     <Link href="/" style={styles.link}>
                         <Text>Go to home screen!</Text>
                     </Link>
+                    <BackButton title="" />
                 </View>
             </>
         );

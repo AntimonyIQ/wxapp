@@ -11,7 +11,6 @@
 // limitations under the License.
 
 import ProfileButton from '@/components/button/profile';
-import DialogModal from '@/components/modals/dialog';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
 import ThemedText from '@/components/ThemedText';
 import ThemedView from '@/components/ThemedView';
@@ -23,31 +22,25 @@ import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import React from 'react';
 import { Appearance, Linking, StyleSheet } from 'react-native';
-import Toast from 'react-native-toast-message';
 import sessionManager from '../../session/session';
 
 interface IProps { }
 
 interface IState {
-    logout: boolean;
-    changepin: boolean;
 }
 
 export default class TabTwoScreen extends React.Component<IProps, IState> {
     private session: UserData = sessionManager.getUserData();
     private avatar: Result;
-    private user: IUser;
     constructor(props: IProps) {
         super(props);
         this.state = {
             logout: false,
-            changepin: false,
         };
         if (!this.session || !this.session.isLoggedIn) {
             logger.log("Session not found. Redirecting to login screen.");
             router.dismissTo("/");
         };
-        this.user = this.session.user as IUser;
         this.avatar = createAvatar(micah, {
             seed: this.session?.user?.fullName,
         });
@@ -58,7 +51,6 @@ export default class TabTwoScreen extends React.Component<IProps, IState> {
     }
 
     render() {
-        const { logout, changepin } = this.state;
         return (
             <ParallaxScrollView
                 headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
@@ -79,7 +71,6 @@ export default class TabTwoScreen extends React.Component<IProps, IState> {
                             text={'Payment methods'}
                             onPress={() => router.navigate('/payment')}
                         />
-                        <ProfileButton text={'Change Pin'} onPress={() => this.setState({ changepin: true })} />
                         <ProfileButton
                             text={'Refer and Earn'}
                             onPress={() => router.navigate('/refer')}
@@ -93,49 +84,15 @@ export default class TabTwoScreen extends React.Component<IProps, IState> {
                 </ThemedView>
 
                 <ThemedView style={styles.section}>
-                    <ThemedText style={{ fontFamily: 'AeonikRegular' }}>Other services</ThemedText>
+                    <ThemedText style={{ fontFamily: 'AeonikRegular' }}>Others</ThemedText>
                     <ThemedView style={styles.servicesContainer}>
                         <ProfileButton text={'Legal'} onPress={() => {
                             Linking.openURL('https://wealthx.app/privacy').catch((err) => console.error('Failed to open URL:', err))
                         }} />
                         <ProfileButton text={'Chat With Us'} onPress={() => router.navigate('/chat')} />
-                        <ProfileButton text={'Get Help'} onPress={() => Linking.openURL('https://wealthx.app/faq').catch((err) => console.error('Failed to open URL:', err))} />
-                        <ProfileButton text={'Log Out'} onPress={() => this.setState({ logout: !logout })} hideBorder={true} />
+                        <ProfileButton text={'Get Help'} hideBorder={true} onPress={() => Linking.openURL('https://wealthx.app/faq').catch((err) => console.error('Failed to open URL:', err))} />
                     </ThemedView>
                 </ThemedView>
-                <DialogModal
-                    title='Confirm Logout'
-                    message='Are you sure you want to log out?'
-                    visible={logout}
-                    onConfirm={() => this.setState({ logout: !logout }, async () => {
-                        await sessionManager.updateSession({ ...this.session, isLoggedIn: false });
-                        router.dismissTo("/");
-                    })}
-                    onCancel={() => this.setState({ logout: !logout })} />
-                <DialogModal
-                    title="Confirm PIN Change"
-                    message={
-                        <>
-                            <ThemedText style={styles.dialogMessage}>
-                                Changing your PIN requires verification for security purposes. A confirmation email will be sent to your registered email address.
-                            </ThemedText>
-                            <ThemedText style={styles.dialogMessage}>
-                                Please check your inbox and follow the instructions to complete the PIN change.
-                            </ThemedText>
-                        </>
-                    }
-                    visible={changepin}
-                    onConfirm={() => this.setState({ changepin: !changepin }, async () => {
-                        Toast.show({
-                            type: "success",
-                            text1: "Security Update",
-                            text2: `A confirmation email has been sent to ${this.user.email.slice(0, 3)}****${this.user.email.slice(-3)}.`,
-                            text1Style: { fontSize: 16, fontFamily: "AeonikBold" },
-                            text2Style: { fontSize: 12, fontFamily: "AeonikRegular" },
-                        });
-                    })}
-                    onCancel={() => this.setState({ changepin: !changepin })}
-                />
             </ParallaxScrollView>
         );
     }

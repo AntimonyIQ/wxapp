@@ -11,8 +11,6 @@
         "ios": {
             "supportsTablet": true,
             "bundleIdentifier": "com.wealthx.app.wxconcept",
-            "appleId": "wealthx01@gmail.com",
-            "ascAppId": "1631695138",
             "buildNumber": "25",
             "infoPlist": {
                 "UIFileSharingEnabled": true,

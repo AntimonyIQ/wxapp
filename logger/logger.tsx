@@ -10,6 +10,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Platform } from "react-native";
+
 export default class logger {
     private static logMessage(method: 'log' | 'info' | 'warn' | 'error' | 'table', message?: any, ...optionalParams: any[]) {
         const visible = true;
@@ -40,6 +42,7 @@ export default class logger {
 
     public static clear() {
         console.clear();
+        if (Platform.OS !== "web") return;
         console.log(
             `%c\u26D4 STOP! \u26D4%c\n`,
             'color: red; font-size: 30px; text-shadow: 2px 2px black;',

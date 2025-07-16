@@ -17,7 +17,7 @@ import { router, Stack } from 'expo-router';
 import React from 'react';
 import Defaults from '../default/default';
 
-export default class AccountLayout extends React.Component {
+export default class PinLayout extends React.Component {
     private session: UserData = sessionManager.getUserData();
     constructor(props: {}) {
         super(props);
