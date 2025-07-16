@@ -185,7 +185,20 @@ export default class SwapScreen extends React.Component<SwapProps, SwapState> {
         this.estimate();
     };
 
-    private processSelectedTrade = () => { }
+    private processSelectedTrade = (list: IList) => {
+        const { fromCurrency, toCurrency, whom } = this.state;
+        if (whom === interaction.from && list.description === toCurrency.currency) return;
+        if (whom === interaction.to && list.description === fromCurrency.currency) return;
+        if (whom === interaction.from && list.description === fromCurrency.currency) return;
+        if (whom === interaction.to && list.description === toCurrency.currency) return;
+        if (whom === interaction.from) {
+            const fromCurrency: IMarket = Defaults.FIND_MARKET(list.description as Coin);
+            this.setState({ fromCurrency: fromCurrency, trade_modal: false, fromValue: "", toValue: "" });
+        } else {
+            const toCurrency: IMarket = Defaults.FIND_MARKET(list.description as Coin);
+            this.setState({ toCurrency: toCurrency, trade_modal: false, fromValue: "", toValue: "" });
+        }
+    }
 
     private renderKeypadItem = ({ item }: { item: any }): React.JSX.Element => (
         <TouchableOpacity
@@ -287,9 +300,7 @@ export default class SwapScreen extends React.Component<SwapProps, SwapState> {
                             </TouchableOpacity>
 
                             <SwapTextField
-                                onChangeCoin={(): void => this.setState({ whom: interaction.to }, () => {
-
-                                })}
+                                onChangeCoin={(): void => this.setState({ whom: interaction.to, trade_modal: !trade_modal })}
                                 onMaxPress={(): void => this.setState({ whom: interaction.to }, () => {
                                     this.handleTextChanged(toCurrency.balance.toString());
                                 })}

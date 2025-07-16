@@ -1,0 +1,44 @@
+{
+  "cli": {
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "channel": "development",
+      "node": "22.13.0"
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "channel": "preview",
+      "node": "22.13.0"
+    },
+    "production": {
+        "developmentClient": false,
+        "distribution": "store",
+        "ios": {
+            "image": "latest"
+        },
+        "android": {
+            "buildType": "app-bundle"
+        },
+        "channel": "production",
+        "autoIncrement": true,
+        "node": "22.13.0"
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "wealthx01@gmail.com",
+        "ascAppId": "1631695138",
+        "ascApiKeyPath": "./AuthKey_2R2F588664.p8",
+        "ascApiKeyIssuerId": "f6b2d207-32da-40f9-a0e7-c9e7ecfd326a"
+      }
+    }
+  }
+}
