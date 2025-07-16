@@ -14,7 +14,7 @@ import React from "react";
 import sessionManager from "@/session/session";
 import logger from "@/logger/logger";
 import { Href, router, Stack } from "expo-router";
-import { Appearance, ColorSchemeName, Linking, Platform, Share, StyleSheet, TouchableOpacity } from "react-native";
+import { Appearance, ColorSchemeName, Linking, Platform, ScrollView, Share, StyleSheet, TouchableOpacity } from "react-native";
 import { Image } from "expo-image";
 import DialogModal from "@/components/modals/dialog";
 import ProfileButton from "@/components/button/profile";
@@ -28,6 +28,7 @@ import LoadingModal from "@/components/modals/loading";
 import { Status } from "@/enums/enums";
 import ProfileSwitch from "@/components/switch/profile";
 import * as LocalAuthentication from 'expo-local-authentication';
+import VerifiedButton from "@/components/button/verified";
 
 interface IProps { }
 
@@ -286,6 +287,11 @@ export default class AccountSettingScreen extends React.Component<IProps, IState
         }
     };
 
+    private identification = async (): Promise<void> => {
+        if (this.session.user?.isPhoneNumberVerified === false) Defaults.TOAST("Please verify phone number to continue");
+
+    }
+
     render(): React.ReactNode {
         const { deleted, logout_modal, changepin, loading, disableaccount } = this.state;
         return (
@@ -307,61 +313,89 @@ export default class AccountSettingScreen extends React.Component<IProps, IState
                         <ThemedView></ThemedView>
                     </ThemedView>
 
-                    <ThemedView style={styles.content}>
-                        <ThemedView style={{ marginTop: 21, gap: 12 }}>
-                            <ThemedText>Account services</ThemedText>
-                            <ThemedView
-                                style={{
-                                    padding: 8,
-                                    borderRadius: 12,
-                                    gap: 8,
-                                    backgroundColor: this.appreance === "dark" ? '#090909' : '#F7F7F7'
-                                }}>
-                                {/** <ProfileButton text={'Change Password'} onPress={() => router.navigate('/forget' as Href)} /> */}
-                                <ProfileButton text={'Change Transaction Pin'} onPress={() => this.setState({ changepin: true })} />
-                                <ProfileSwitch text={'Disable Account'}
-                                    isEnabled={this.session.user?.isActive === true ? true : false}
-                                    onValueChange={(): void => this.setState({ disableaccount: true })} />
-                                {this.session.user?.passkeyEnabled === false
-                                    ? <ProfileButton text={'Setup Passkey Authentication'} onPress={() => router.navigate('/passkey/new')} />
-                                    : <ProfileSwitch text={'Passkey Activated'} isEnabled={this.session.user?.passkeyEnabled ? true : false} onValueChange={(): void => { }} />
-                                }
-                                {this.session.user?.biometricEnabled === false
-                                    ? <ProfileButton text={'Biometric Authentication'} onPress={this.biometric} />
-                                    : <ProfileSwitch text={'Biometric Activated'} isEnabled={this.session.user?.biometricEnabled ? true : false} onValueChange={(): void => { }} />
-                                }
-                                {this.session.user?.twoFactorEnabled === false
-                                    ? <ProfileButton text={'2FA Authentication'} onPress={() => router.navigate('/2fa/new')} />
-                                    : <ProfileSwitch text={'2FA Auth Enabled'} onValueChange={() => { }} isEnabled={this.session.user?.twoFactorEnabled ? true : false} />
-                                }
-                                <ProfileButton text={'Logout'} textColor={"#FF0000"} hideBorder={true} onPress={() => this.setState({ logout_modal: true })} />
+                    <ScrollView horizontal={false}
+                        showsVerticalScrollIndicator={false}
+                        showsHorizontalScrollIndicator={false}>
+                        <ThemedView style={styles.content}>
+                            <ThemedView style={{ marginTop: 21, gap: 12 }}>
+                                <ThemedText>Verifications</ThemedText>
+                                <ThemedView
+                                    style={{
+                                        padding: 8,
+                                        borderRadius: 12,
+                                        gap: 8,
+                                        backgroundColor: this.appreance === "dark" ? '#090909' : '#F7F7F7'
+                                    }}>
+                                    {this.session.user?.isEmailVerified === false
+                                        ? <ProfileButton text={'Verify Email Address'} onPress={() => { }} />
+                                        : <VerifiedButton text={'Email verified'} onPress={(): void => { }} />
+                                    }
+                                    {this.session.user?.isPhoneNumberVerified === false
+                                        ? <ProfileButton text={'Verify Phone Number'} onPress={() => router.navigate('/phone')} />
+                                        : <ProfileSwitch text={'Phone verified'} isEnabled={this.session.user?.isPhoneNumberVerified ? true : false} onValueChange={(): void => { }} />
+                                    }
+                                    {this.session.user?.isIdentityVerified === false
+                                        ? <ProfileButton text={'Identity verification'} hideBorder={true} onPress={this.identification} />
+                                        : <ProfileSwitch text={'Identity Verifiedd'} hideBorder={true} isEnabled={this.session.user?.isIdentityVerified ? true : false} onValueChange={(): void => { }} />
+                                    }
+                                </ThemedView>
                             </ThemedView>
-                        </ThemedView>
 
-                        <ThemedView style={{ gap: 12, marginTop: 40 }}>
-                            <ThemedText>Other services</ThemedText>
-                            <ThemedView
-                                style={{
-                                    padding: 8,
-                                    borderRadius: 12,
-                                    gap: 8,
-                                    backgroundColor: this.appreance === "dark" ? '#090909' : '#F7F7F7'
-                                }}
-                            >
-                                <ProfileButton text={'Rate WealthX'} onPress={() => Linking.openURL(this.store_link).catch((err) => console.error('Error opening URL:', err))} />
-                                <ProfileButton text={'Share'} onPress={async () => {
-                                    await Share.share({
-                                        title: "Join WealthX and start trading your own cryptocurrency assets",
-                                        message: this.store_link,
-                                    });
-                                }} />
-                                <ProfileButton text={'Help'} onPress={() => {
-                                    Linking.openURL('https://wealthx.app/faq').catch((err) => console.error('Error opening URL:', err));
-                                }} />
-                                <ProfileButton textColor={"#FF0000"} text={'Delete Account'} hideBorder={true} onPress={() => this.setState({ deleted: true })} />
+                            <ThemedView style={{ marginTop: 21, gap: 12 }}>
+                                <ThemedText>Account services</ThemedText>
+                                <ThemedView
+                                    style={{
+                                        padding: 8,
+                                        borderRadius: 12,
+                                        gap: 8,
+                                        backgroundColor: this.appreance === "dark" ? '#090909' : '#F7F7F7'
+                                    }}>
+                                    {/** <ProfileButton text={'Change Password'} onPress={() => router.navigate('/forget' as Href)} /> */}
+                                    <ProfileButton text={'Change Transaction Pin'} onPress={() => this.setState({ changepin: true })} />
+                                    <ProfileSwitch text={'Disable Account'}
+                                        isEnabled={this.session.user?.isActive === true ? true : false}
+                                        onValueChange={(): void => this.setState({ disableaccount: true })} />
+                                    {this.session.user?.passkeyEnabled === false
+                                        ? <ProfileButton text={'Setup Passkey Authentication'} onPress={() => router.navigate('/passkey/new')} />
+                                        : <ProfileSwitch text={'Passkey Activated'} isEnabled={this.session.user?.passkeyEnabled ? true : false} onValueChange={(): void => { }} />
+                                    }
+                                    {this.session.user?.biometricEnabled === false
+                                        ? <ProfileButton text={'Biometric Authentication'} onPress={this.biometric} />
+                                        : <ProfileSwitch text={'Biometric Activated'} isEnabled={this.session.user?.biometricEnabled ? true : false} onValueChange={(): void => { }} />
+                                    }
+                                    {this.session.user?.twoFactorEnabled === false
+                                        ? <ProfileButton text={'2FA Authentication'} onPress={() => router.navigate('/2fa')} />
+                                        : <ProfileSwitch text={'2FA Auth Enabled'} onValueChange={() => { }} isEnabled={this.session.user?.twoFactorEnabled ? true : false} />
+                                    }
+                                    <ProfileButton text={'Logout'} textColor={"#FF0000"} hideBorder={true} onPress={() => this.setState({ logout_modal: true })} />
+                                </ThemedView>
+                            </ThemedView>
+
+                            <ThemedView style={{ gap: 12, marginTop: 40 }}>
+                                <ThemedText>Other services</ThemedText>
+                                <ThemedView
+                                    style={{
+                                        padding: 8,
+                                        borderRadius: 12,
+                                        gap: 8,
+                                        backgroundColor: this.appreance === "dark" ? '#090909' : '#F7F7F7'
+                                    }}
+                                >
+                                    <ProfileButton text={'Rate WealthX'} onPress={() => Linking.openURL(this.store_link).catch((err) => console.error('Error opening URL:', err))} />
+                                    <ProfileButton text={'Share'} onPress={async () => {
+                                        await Share.share({
+                                            title: "Join WealthX and start trading your own cryptocurrency assets",
+                                            message: this.store_link,
+                                        });
+                                    }} />
+                                    <ProfileButton text={'Help'} onPress={() => {
+                                        Linking.openURL('https://wealthx.app/faq').catch((err) => console.error('Error opening URL:', err));
+                                    }} />
+                                    <ProfileButton textColor={"#FF0000"} text={'Delete Account'} hideBorder={true} onPress={() => this.setState({ deleted: true })} />
+                                </ThemedView>
                             </ThemedView>
                         </ThemedView>
-                    </ThemedView>
+                    </ScrollView>
 
                     <DialogModal
                         title='Confirm Account Delete'

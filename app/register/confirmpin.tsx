@@ -48,6 +48,12 @@ export default class ConfirmPinScreen extends React.Component<IProps, IState> {
 
             await Defaults.IS_NETWORK_AVAILABLE();
             if (pin !== confirmPin.join("")) throw new Error("Pin does not match");
+            if (!this.registration.phoneNumber) throw new Error("Invalid Phone number");
+            if (!this.registration.countryCode) throw new Error("Invalid country code");
+
+            const codeOnly = this.registration.countryCode.replace('+', '');
+            const phoneClean = this.registration.phoneNumber.replace(/^0+/, '');
+            const fullPhone = codeOnly + phoneClean;
 
             const res = await fetch(`${Defaults.API}/auth/register`, {
                 method: 'POST',
@@ -64,7 +70,7 @@ export default class ConfirmPinScreen extends React.Component<IProps, IState> {
                     dateOfBirth: this.registration.dateOfBirth,
                     username: this.registration.username,
                     pin: this.registration.pin,
-                    phoneNumber: this.registration.phoneNumber,
+                    phoneNumber: fullPhone,
                     referralCode: this.registration.referralCode,
                     fullName: this.registration.fullName,
                 }),

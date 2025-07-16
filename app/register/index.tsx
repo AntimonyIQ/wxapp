@@ -58,7 +58,7 @@ export default class RegisterScreen extends React.Component<IProps, IState> {
         this.state = {
             loading: false,
             country: '',
-            countryCode: '',
+            countryCode: '+234',
             referralCode: '',
             referralFocused: false,
             dateOfBirth: '',

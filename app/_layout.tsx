@@ -19,14 +19,60 @@ import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import Toast from 'react-native-toast-message';
 import { Appearance, Platform, Dimensions, View, Text } from 'react-native';
+import * as BackgroundFetch from 'expo-background-fetch';
+import * as TaskManager from 'expo-task-manager';
+import { addNotificationReceivedListener, addNotificationResponseReceivedListener, registerForPushNotificationsAsync, scheduleNotification } from '@/notifications/notification';
+import logger from '@/logger/logger';
+import Defaults from './default/default';
+import sessionManager from '@/session/session';
+import { INotification, IResponse, UserData } from '@/interface/interface';
+import { Status } from '@/enums/enums';
 
 SplashScreen.preventAutoHideAsync();
 
 interface RootLayoutState {
     loaded: boolean;
+    expoPushToken: string;
 }
 
 const isDesktop: boolean = Platform.OS === 'web' && Dimensions.get('window').width > 600;
+const NOTIFICATION_TASK_IDENTIFIER = 'notification-task';
+
+TaskManager.defineTask(NOTIFICATION_TASK_IDENTIFIER, async () => {
+    try {
+        await Defaults.IS_NETWORK_AVAILABLE();
+        const session: UserData = sessionManager.getUserData();
+        const res = await fetch(`${Defaults.API}/notification/user/${session.user?._id}}`, {
+            method: 'GET',
+            headers: {
+                ...Defaults.HEADERS,
+                'x-wealthx-handshake': session.client?.publicKey,
+                'x-wealthx-deviceid': session.deviceid,
+            },
+        });
+
+        const data: IResponse = await res.json();
+        if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+        if (data.status === Status.SUCCESS) {
+            if (!data.handshake) throw new Error('Unable to process data right now, please try again.');
+            const notifications: Array<INotification> = Defaults.PARSE_DATA(data.data, session.client?.privateKey, data.handshake);
+            console.log(notifications);
+            for (const notification of notifications) {
+                await scheduleNotification(
+                    notification.title,
+                    notification.body,
+                    { type: "info" },
+                    2
+                );
+            }
+        }
+
+        return BackgroundFetch.BackgroundFetchResult.NewData;
+    } catch (error) {
+        console.error("Background fetch failed:", error);
+        return BackgroundFetch.BackgroundFetchResult.Failed;
+    }
+});
 
 export default class RootLayout extends React.Component<{}, RootLayoutState> {
     private readonly routes: Array<{ name: string, headerShown: boolean }> = [
@@ -46,17 +92,32 @@ export default class RootLayout extends React.Component<{}, RootLayoutState> {
         { name: 'transaction', headerShown: false },
         { name: 'test', headerShown: false },
         { name: 'chat', headerShown: false },
+        { name: 'phone', headerShown: false },
+        { name: '2fa', headerShown: false },
+        { name: 'pin', headerShown: false },
         { name: '+not-found', headerShown: false },
     ];
+    private notificationListener: any;
+    private responseListener: any;
     constructor(props: {}) {
         super(props);
-        this.state = { loaded: false };
+        this.state = { loaded: false, expoPushToken: "" };
     }
 
     async componentDidMount() {
         await this.loadFonts();
         this.setState({ loaded: true });
         SplashScreen.hideAsync();
+        this.tasks();
+        registerForPushNotificationsAsync().then(token => this.setState({ expoPushToken: token ? token : "" }));
+
+        this.notificationListener = addNotificationReceivedListener(notification => {
+            logger.log("notification: ", notification);
+        });
+
+        this.responseListener = addNotificationResponseReceivedListener(response => {
+            logger.log("response: ", response);
+        });
     }
 
     async loadFonts() {
@@ -71,8 +132,33 @@ export default class RootLayout extends React.Component<{}, RootLayoutState> {
         });
     }
 
+    private tasks = async (): Promise<void> => {
+        try {
+            const status = await BackgroundFetch.getStatusAsync();
+            console.log("Background fetch status:", status);
+
+            if (status === BackgroundFetch.BackgroundFetchStatus.Available) {
+                const isRegistered = await TaskManager.isTaskRegisteredAsync(NOTIFICATION_TASK_IDENTIFIER);
+                if (!isRegistered) {
+                    await BackgroundFetch.registerTaskAsync(NOTIFICATION_TASK_IDENTIFIER, {
+                        minimumInterval: 900, // 15 mins
+                        stopOnTerminate: false,
+                        startOnBoot: true,
+                    });
+                    console.log("✅ Background fetch task registered.");
+                } else {
+                    console.log("ℹ️ Background fetch already registered.");
+                }
+            } else {
+                console.warn("⚠️ Background fetch is unavailable.");
+            }
+        } catch (error) {
+            console.error("Failed to register background fetch:", error);
+        }
+    };
+
     render() {
-        if (!this.state.loaded) { return null; }
+        if (!this.state.loaded) { return null }
 
         return (
             <ThemeProvider value={Appearance.getColorScheme() === 'dark' ? DarkTheme : DefaultTheme}>

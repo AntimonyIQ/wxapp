@@ -178,6 +178,12 @@ export default class CoinScreen extends React.Component<IProps, IState> {
                                                 this.setState({ visible: true, whichnav: "send" });
                                                 return;
                                             }
+
+                                            if (this.session.user?.isPhoneNumberVerified === false) {
+                                                router.navigate("/phone/welcome");
+                                                return;
+                                            }
+
                                             router.navigate(`/send/input`);
                                         }}>
                                         <ThemedView style={styles.actionButton}>
@@ -384,6 +390,11 @@ export default class CoinScreen extends React.Component<IProps, IState> {
                         listChange={async (item) => {
                             const { whichnav } = this.state;
                             this.setState({ visible: false });
+                            if (this.session.user?.isPhoneNumberVerified === false) {
+                                router.navigate("/phone/welcome");
+                                return;
+                            }
+
                             if (whichnav === "send") {
                                 await sessionManager.updateSession({ ...this.session, params: { currency: asset.currency, network: item.description as BlockchainNetwork } })
                                 router.navigate('/send/input');

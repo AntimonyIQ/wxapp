@@ -396,12 +396,24 @@ export default class DashboardScreen extends React.Component<IProps, IState> {
                                                     </Pressable>
                                                     <Pressable
                                                         disabled={loading}
-                                                        onPress={() => router.navigate('/withdraw')}
+                                                        onPress={() => {
+                                                            if (this.session.user?.isPhoneNumberVerified === false) {
+                                                                router.navigate("/phone/welcome");
+                                                                return;
+                                                            }
+                                                            router.navigate('/withdraw');
+                                                        }}
                                                         style={{ paddingHorizontal: 30, paddingVertical: 15, borderRadius: 99, backgroundColor: "#E6E6E6" }}>
                                                         <Text style={{ fontFamily: 'AeonikRegular', fontSize: 14 }}>Withdraw</Text>
                                                     </Pressable>
                                                     <Pressable
-                                                        onPress={() => this.setState({})}
+                                                        onPress={() => {
+                                                            if (this.session.user?.isPhoneNumberVerified === false) {
+                                                                router.navigate("/phone/welcome");
+                                                                return;
+                                                            }
+                                                            router.navigate('/withdraw');
+                                                        }}
                                                         style={{ paddingHorizontal: 30, paddingVertical: 15, borderRadius: 99, backgroundColor: "#E6E6E6" }}>
                                                         <Text style={{ fontFamily: 'AeonikRegular', fontSize: 14, }}>Pay bills</Text>
                                                     </Pressable>

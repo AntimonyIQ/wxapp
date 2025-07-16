@@ -1,3 +1,15 @@
+// This is part for the Wealthx Mobile Application.
+// Copyright © 2023 WealthX. All rights reserved.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// http://www.apache.org/licenses/LICENSE-2.0
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 import React from "react";
 import sessionManager from "@/session/session";
 import { UserData } from "@/interface/interface";
@@ -11,6 +23,7 @@ import { Image } from "expo-image";
 import ThemedView from "@/components/ThemedView";
 import ThemedText from "@/components/ThemedText";
 import ThemedSafeArea from "@/components/ThemeSafeArea";
+import Defaults from "../default/default";
 
 interface IProps { }
 
@@ -23,9 +36,11 @@ export default class PaymentInfoScreen extends React.Component<IProps, IState> {
     constructor(props: IProps) {
         super(props);
 
-        if (!this.session || !this.session.isLoggedIn) {
+        const login: boolean = Defaults.LOGIN_STATUS();
+        if (!login) {
             logger.log("Session not found. Redirecting to login screen.");
-            router.dismissTo("/");
+            router.dismissTo(this.session.user?.passkeyEnabled === true ? "/passkey" : '/onboarding/login');
+            return;
         };
     }
 

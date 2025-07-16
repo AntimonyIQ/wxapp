@@ -1,19 +1,19 @@
+import ListModal from "@/components/modals/list";
 import { Colors } from '@/constants/Colors';
+import { IList } from "@/interface/interface";
+import * as Clipboard from 'expo-clipboard';
+import { Image } from 'expo-image';
 import React from 'react';
 import {
-    TextInput,
+    Appearance,
+    KeyboardTypeOptions,
     Pressable,
     StyleSheet,
+    TextInput,
     Vibration,
-    KeyboardTypeOptions,
-    Appearance,
 } from 'react-native';
-import { Image } from 'expo-image';
-import * as Clipboard from 'expo-clipboard';
-import { IList } from "@/interface/interface";
-import ListModal from "@/components/modals/list";
-import ThemedView from '../ThemedView';
 import ThemedText from '../ThemedText';
+import ThemedView from '../ThemedView';
 
 interface IProps {
     placeholder?: string;
@@ -116,7 +116,7 @@ export default class PhoneField extends React.Component<IProps, IState> {
                         <ThemedText>{code}</ThemedText>
                         <Image
                             source={require("../../assets/icons/chevron-left.svg")}
-                            style={{ width: 26, height: 26, transform: [{ rotate: '270deg' }] }}
+                            style={{ width: 20, height: 20, transform: [{ rotate: '90deg' }] }}
                             tintColor={this.appreance === "dark" ? "#FFF" : "#000"} />
                     </Pressable>
                     <TextInput
@@ -183,6 +183,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         width: '100%',
+        gap: 10,
         backgroundColor: Appearance.getColorScheme() === "dark" ? "#000" : "#F7f7f7",
     },
     input: {

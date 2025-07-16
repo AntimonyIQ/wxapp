@@ -10,10 +10,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { Image } from 'expo-image';
-import React from 'react';
 import { ColorValue, Pressable } from 'react-native';
+import React from 'react';
+import { Image } from 'expo-image';
 import ThemedText from '../ThemedText';
+import { Colors } from '@/constants/Colors';
 
 interface ProfileButtonProps {
     text: string;
@@ -22,7 +23,7 @@ interface ProfileButtonProps {
     hideBorder?: boolean;
 }
 
-export default class ProfileButton extends React.Component<ProfileButtonProps> {
+export default class VerifiedButton extends React.Component<ProfileButtonProps> {
     render() {
         const { text, onPress, hideBorder, textColor } = this.props;
         return (
@@ -48,9 +49,9 @@ export default class ProfileButton extends React.Component<ProfileButtonProps> {
                     {text}
                 </ThemedText>
                 <Image
-                    source={require("../../assets/icons/chevron_right.svg")}
-                    style={{ width: 20, height: 20, transform: [{ rotate: '180deg' }] }}
-                    tintColor={"#000000"} />
+                    source={require("../../assets/icons/verification.svg")}
+                    style={{ width: 20, height: 20 }}
+                    tintColor={Colors.blue} />
             </Pressable>
         );
     }
