@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TextInput, StyleSheet, Pressable, Appearance } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Pressable } from 'react-native';
 import { Coin } from '@/enums/enums';
 import ThemedText from '../ThemedText';
 import { IMarket } from '@/interface/interface';
@@ -140,7 +140,7 @@ export default class AmountField extends React.Component<AmountFieldProps, Amoun
 const styles = StyleSheet.create({
     container: {
         paddingHorizontal: 16,
-        backgroundColor: Appearance.getColorScheme() === "dark" ? '#090909' : '#f7f7f7',
+        backgroundColor: '#f7f7f7',
         borderRadius: 10,
         marginBottom: 16,
         width: "100%"
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
         fontFamily: 'AeonikMedium',
         fontSize: 40,
         lineHeight: 40,
-        color: Appearance.getColorScheme() === "dark" ? '#f1f1f1' : '#1F1F1F',
+        color: '#1F1F1F',
         textDecorationLine: "none",
         width: "100%"
     },

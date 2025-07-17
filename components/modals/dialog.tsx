@@ -12,7 +12,7 @@
 
 import { Colors } from '@/constants/Colors';
 import React from 'react';
-import { Modal, TouchableOpacity, StyleSheet, TouchableWithoutFeedback, Appearance } from 'react-native';
+import { Modal, TouchableOpacity, StyleSheet, TouchableWithoutFeedback } from 'react-native';
 import logger from '@/logger/logger';
 import ThemedView from '../ThemedView';
 import ThemedText from '../ThemedText';
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         borderColor: "red",
         borderWidth: 1,
-        backgroundColor: Appearance.getColorScheme() === "dark" ? "#000000" : Colors.white,
+        backgroundColor: Colors.white,
     },
     buttonText: {
         color: 'white',

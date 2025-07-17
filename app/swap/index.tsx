@@ -43,7 +43,6 @@ interface SwapState {
 
 export default class SwapScreen extends React.Component<SwapProps, SwapState> {
     private session: UserData = sessionManager.getUserData();
-    private appreance: ColorSchemeName = Appearance.getColorScheme();
     private readonly title = "Swap Screen";
     constructor(props: SwapProps) {
         super(props);
@@ -252,7 +251,7 @@ export default class SwapScreen extends React.Component<SwapProps, SwapState> {
                             <Image
                                 source={require("../../assets/icons/chevron_right.svg")}
                                 style={styles.backIcon}
-                                tintColor={this.appreance === "dark" ? Colors.light.background : "#000000"} />
+                                tintColor={"#000000"} />
                             <ThemedText style={styles.backText}>Back</ThemedText>
                         </TouchableOpacity>
                         <ThemedText style={styles.title}>Swap</ThemedText>
@@ -285,7 +284,7 @@ export default class SwapScreen extends React.Component<SwapProps, SwapState> {
                                         width: 30,
                                         height: 30,
                                         borderRadius: 360,
-                                        backgroundColor: this.appreance === "dark" ? "#000000" : "#F5F5F5",
+                                        backgroundColor: "#F5F5F5",
                                         flexDirection: "row",
                                         alignItems: "center",
                                         justifyContent: "center",
@@ -294,7 +293,7 @@ export default class SwapScreen extends React.Component<SwapProps, SwapState> {
                                             source={require("../../assets/icons/swap.svg")}
                                             style={{ width: 25, height: 25 }}
                                             transition={500}
-                                            tintColor={this.appreance === "dark" ? "#FFF" : "#000"} />
+                                            tintColor={"#000"} />
                                     </ThemedView>
                                 </ThemedView>
                             </TouchableOpacity>
@@ -336,7 +335,7 @@ export default class SwapScreen extends React.Component<SwapProps, SwapState> {
                         onClose={(): void => this.setState({ error_modal: !error_modal })}
                         message={{ title: error_title, description: error_message }} />
                     <LoadingModal loading={loading} />
-                    <StatusBar style={this.appreance === "dark" ? 'light' : "dark"} />
+                    <StatusBar style={"dark"} />
                 </ThemedSafeArea>
             </>
         );
@@ -357,7 +356,7 @@ const styles = StyleSheet.create({
     backButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: Appearance.getColorScheme() === "dark" ? '#070707' : '#f7f7f7',
+        backgroundColor: '#f7f7f7',
         borderRadius: 99,
         paddingVertical: 5,
         paddingRight: 20,

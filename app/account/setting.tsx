@@ -13,8 +13,8 @@
 import React from "react";
 import sessionManager from "@/session/session";
 import logger from "@/logger/logger";
-import { Href, router, Stack } from "expo-router";
-import { Appearance, ColorSchemeName, Linking, Platform, ScrollView, Share, StyleSheet, TouchableOpacity } from "react-native";
+import { router, Stack } from "expo-router";
+import { Linking, Platform, ScrollView, Share, StyleSheet, TouchableOpacity } from "react-native";
 import { Image } from "expo-image";
 import DialogModal from "@/components/modals/dialog";
 import ProfileButton from "@/components/button/profile";
@@ -42,7 +42,6 @@ interface IState {
 
 export default class AccountSettingScreen extends React.Component<IProps, IState> {
     private session: UserData = sessionManager.getUserData();
-    private appreance: ColorSchemeName = Appearance.getColorScheme();
     private readonly title = "Account Screen";
     private readonly store_link = Platform.OS === "android"
         ? "https://play.google.com/store/apps/details?id=com.wealthx.app"
@@ -324,7 +323,7 @@ export default class AccountSettingScreen extends React.Component<IProps, IState
                                         padding: 8,
                                         borderRadius: 12,
                                         gap: 8,
-                                        backgroundColor: this.appreance === "dark" ? '#090909' : '#F7F7F7'
+                                        backgroundColor: '#F7F7F7'
                                     }}>
                                     {this.session.user?.isEmailVerified === false
                                         ? <ProfileButton text={'Verify Email Address'} onPress={() => { }} />
@@ -348,7 +347,7 @@ export default class AccountSettingScreen extends React.Component<IProps, IState
                                         padding: 8,
                                         borderRadius: 12,
                                         gap: 8,
-                                        backgroundColor: this.appreance === "dark" ? '#090909' : '#F7F7F7'
+                                        backgroundColor: '#F7F7F7'
                                     }}>
                                     {/** <ProfileButton text={'Change Password'} onPress={() => router.navigate('/forget' as Href)} /> */}
                                     <ProfileButton text={'Change Transaction Pin'} onPress={() => this.setState({ changepin: true })} />
@@ -378,7 +377,7 @@ export default class AccountSettingScreen extends React.Component<IProps, IState
                                         padding: 8,
                                         borderRadius: 12,
                                         gap: 8,
-                                        backgroundColor: this.appreance === "dark" ? '#090909' : '#F7F7F7'
+                                        backgroundColor: '#F7F7F7'
                                     }}
                                 >
                                     <ProfileButton text={'Rate WealthX'} onPress={() => Linking.openURL(this.store_link).catch((err) => console.error('Error opening URL:', err))} />

@@ -1,4 +1,4 @@
-import { Appearance, ColorSchemeName, Modal, Platform, Pressable, StyleSheet, Text, TouchableWithoutFeedback, View } from 'react-native';
+import { ColorSchemeName, Modal, Platform, Pressable, StyleSheet, Text, TouchableWithoutFeedback, View } from 'react-native';
 import React from 'react';
 import { IList, IMarket, UserData } from '@/interface/interface';
 import sessionManager from '@/session/session';
@@ -24,7 +24,6 @@ interface IConfirm {
 
 export default class ConfirmModal extends React.Component<IConfirm> {
     private session: UserData = sessionManager.getUserData();
-    private appreance: ColorSchemeName = Appearance.getColorScheme();
     constructor(props: IConfirm) {
         super(props);
         if (!this.session || !this.session.isLoggedIn) {
@@ -77,17 +76,17 @@ export default class ConfirmModal extends React.Component<IConfirm> {
                                             <Image
                                                 source={require("../../assets/icons/close.svg")}
                                                 style={{ width: 24, height: 24 }}
-                                                tintColor={this.appreance === "dark" ? "#FFF" : "#000"} />
+                                                tintColor={"#000"} />
                                         </Pressable>
                                     </ThemedView>
                                     <ThemedView style={styles.separator} />
                                     <ThemedView style={styles.confirmContainer}>
                                         <ThemedView style={{ alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 5 }}>
-                                            <ThemedText style={{ color: this.appreance === "dark" ? "#c7c7c7" : "#757575", fontSize: 12, fontFamily: 'AeonikRegular' }}>{message ? message : "You are about to send"}</ThemedText>
+                                            <ThemedText style={{ color: "#757575", fontSize: 12, fontFamily: 'AeonikRegular' }}>{message ? message : "You are about to send"}</ThemedText>
                                             <ThemedText style={{ fontSize: 32, lineHeight: 32, fontFamily: 'AeonikMedium' }}>{amount} {asset.currency}</ThemedText>
-                                            <ThemedText style={{ color: this.appreance === "dark" ? "#c7c7c7" : "#757575", fontSize: 12, fontFamily: 'AeonikRegular' }}>${this.formatToMoneyString(dollarEquiv)}</ThemedText>
+                                            <ThemedText style={{ color: "#757575", fontSize: 12, fontFamily: 'AeonikRegular' }}>${this.formatToMoneyString(dollarEquiv)}</ThemedText>
                                         </ThemedView>
-                                        <ThemedView style={{ backgroundColor: this.appreance === "dark" ? '#333333' : '#F7F7F7', borderRadius: 12, width: '100%', padding: 13, flexDirection: 'column', alignItems: 'flex-start', gap: 16 }}>
+                                        <ThemedView style={{ backgroundColor: '#F7F7F7', borderRadius: 12, width: '100%', padding: 13, flexDirection: 'column', alignItems: 'flex-start', gap: 16 }}>
                                             {list && list.length > 0 && list.map((item, index) => (
                                                 <View key={index} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, width: "100%" }}>
                                                     <ThemedText style={{ fontFamily: 'AeonikRegular', }}>{item.name}</ThemedText>

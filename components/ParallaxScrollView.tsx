@@ -11,7 +11,7 @@
 // limitations under the License.
 
 import React, { Component, createRef } from 'react';
-import { Appearance, StyleSheet, ScrollView, Animated } from 'react-native';
+import { Animated, Appearance, ScrollView, StyleSheet } from 'react-native';
 import ThemedView from './ThemedView';
 
 const HEADER_HEIGHT = 250;
@@ -91,5 +91,7 @@ const styles = StyleSheet.create({
         padding: 20,
         gap: 16,
         overflow: 'hidden',
+        backgroundColor: "#FFF",
+        height: "100%"
     },
 });

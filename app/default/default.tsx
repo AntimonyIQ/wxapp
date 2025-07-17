@@ -28,7 +28,7 @@ export default class Defaults {
     public static readonly PACKAGE_NAME = "com.wealthx.wallet";
     public static readonly ZERO_PERCENT = "0.0%";
     public static readonly ZERO_BALANCE = "0.00";
-    public static readonly API = "http://api.wealthx.app/api/v3"; // "http://localhost:5500/api/v2";
+    public static readonly API = "https://api.wealthx.app/api/v3"; // "http://localhost:5500/api/v2";
     public static readonly COIN_MARKET_CAP_API = "https://pro-api.coinmarketcap.com";
     public static readonly COIN_MARKET_CAP_KEY = "dbf24205-e0c0-4a10-9e26-901d183e1fa1";
 

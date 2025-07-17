@@ -63,7 +63,7 @@ export default class LoginScreen extends React.Component<IProps, IState> {
                 headers: { "Accept": "application/json" }
             });
 
-            if (!res.ok) throw new Error('Failed to fetch location data from IP!');
+            if (!res.ok) throw new Error('Failed to fetch location data from IP! ' + res.status);
 
             const data = await res.json();
             if (!data) throw new Error('Failed to fetch location data from IP!');

@@ -1,6 +1,6 @@
 import { Colors } from '@/constants/Colors';
 import React from 'react';
-import { Modal, TouchableOpacity, StyleSheet, TouchableWithoutFeedback, Appearance, TextInput } from 'react-native';
+import { Modal, TouchableOpacity, StyleSheet, TouchableWithoutFeedback, TextInput } from 'react-native';
 import Toast from 'react-native-toast-message';
 import ThemedView from '../ThemedView';
 import ThemedText from '../ThemedText';
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
         textAlign: "center",
         fontSize: 18,
         marginHorizontal: 5,
-        color: Appearance.getColorScheme() === "dark" ? Colors.light.background : Colors.dark.background,
+        color: Colors.dark.background,
         fontFamily: 'AeonikRegular',
     },
     buttonContainer: {
@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         borderColor: "red",
         borderWidth: 1,
-        backgroundColor: Appearance.getColorScheme() === "dark" ? "#000000" : Colors.white,
+        backgroundColor: Colors.white,
     },
     buttonText: {
         color: 'white',

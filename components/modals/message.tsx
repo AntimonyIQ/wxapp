@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { Appearance, ColorSchemeName, Modal, Pressable, StyleSheet, TouchableWithoutFeedback } from 'react-native';
+import { ColorSchemeName, Modal, Pressable, StyleSheet, TouchableWithoutFeedback } from 'react-native';
 import React from 'react';
 import { Image } from 'expo-image';
 import logger from '@/logger/logger';
@@ -31,7 +31,6 @@ interface MessageModalProps {
 }
 
 export default class MessageModal extends React.Component<MessageModalProps, {}> {
-    private appreance: ColorSchemeName = Appearance.getColorScheme();
     constructor(props: MessageModalProps) { super(props); }
 
     componentDidMount() {
@@ -63,7 +62,7 @@ export default class MessageModal extends React.Component<MessageModalProps, {}>
                                         <Image
                                             source={require("../../assets/icons/close.svg")}
                                             style={{ width: 24, height: 24 }}
-                                            tintColor={this.appreance === "dark" ? "#FFF" : "#000"} />
+                                            tintColor={"#000"} />
                                     </Pressable>
                                 </ThemedView>
                                 <ThemedView style={styles.separator} />
@@ -124,12 +123,12 @@ const styles = StyleSheet.create({
         right: 0,
         padding: 4,
         borderRadius: 100,
-        backgroundColor: Appearance.getColorScheme() === "dark" ? '#0a0a0a' : '#E8E8E8',
+        backgroundColor: '#E8E8E8',
     },
     separator: {
         width: '100%',
         height: 1,
-        backgroundColor: Appearance.getColorScheme() === "dark" ? '#202020' : '#E8E8E8',
+        backgroundColor: '#E8E8E8',
     },
     confirmContainer: {
         width: '100%',

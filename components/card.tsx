@@ -1,5 +1,5 @@
 import React from 'react';
-import { Appearance, ColorSchemeName, Image, Pressable, StyleSheet } from 'react-native';
+import { Image, Pressable, StyleSheet } from 'react-native';
 import { IMarket, IParams, UserData } from '@/interface/interface';
 import { router } from 'expo-router';
 import ThemedView from './ThemedView';
@@ -13,7 +13,6 @@ export interface ICard {
 
 class Card extends React.Component<ICard> {
     private session: UserData = sessionManager.getUserData();
-    private appreance: ColorSchemeName = Appearance.getColorScheme();
     constructor(props: ICard) {
         super(props);
         this.calculatePercentageChange = this.calculatePercentageChange.bind(this);
@@ -89,7 +88,7 @@ const styles = StyleSheet.create({
         margin: 4,
         flexDirection: "column",
         alignItems: "flex-start",
-        backgroundColor: Appearance.getColorScheme() === "dark" ? "#0F0F0F" : '#F5F5F5',
+        backgroundColor: '#F5F5F5',
     },
     logo: {
         width: 20,

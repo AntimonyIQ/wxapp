@@ -12,7 +12,7 @@
 
 import { Colors } from '@/constants/Colors';
 import React from 'react';
-import { Modal, StyleSheet, TouchableWithoutFeedback, Appearance, Pressable, ColorSchemeName, TextInput, FlatList, TouchableOpacity } from 'react-native';
+import { Modal, StyleSheet, TouchableWithoutFeedback, Pressable, ColorSchemeName, TextInput, FlatList, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import logger from '@/logger/logger';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -31,7 +31,6 @@ interface PinState {
 }
 
 export default class PinModal extends React.Component<PinProps, PinState> {
-    private appreance: ColorSchemeName = Appearance.getColorScheme();
     private inputRefs: React.RefObject<TextInput | null>[] = Array(4).fill(null).map(() => React.createRef<TextInput>());
     constructor(props: PinProps) { super(props); this.state = { pins: Array(4).fill("") } }
     componentDidMount(): void {
@@ -144,7 +143,7 @@ export default class PinModal extends React.Component<PinProps, PinState> {
                                         <Image
                                             source={require("../../assets/icons/close.svg")}
                                             style={{ width: 24, height: 24 }}
-                                            tintColor={this.appreance === "dark" ? "#FFF" : "#000"} />
+                                            tintColor={"#000"} />
                                     </Pressable>
                                 </ThemedView>
                                 <ThemedView style={{ flexDirection: "column", gap: 40 }}>
@@ -204,8 +203,8 @@ const styles = StyleSheet.create({
     input: {
         width: 50,
         height: 50,
-        color: Appearance.getColorScheme() === "dark" ? Colors.dark.text : Colors.light.text,
-        backgroundColor: Appearance.getColorScheme() === "dark" ? "#000" : '#F7F7F7',
+        color: Colors.light.text,
+        backgroundColor: '#F7F7F7',
         borderRadius: 10,
         fontSize: 24,
         textAlign: 'center',

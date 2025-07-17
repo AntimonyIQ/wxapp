@@ -1,8 +1,8 @@
-import { Appearance, ColorSchemeName, StyleSheet, TouchableOpacity, View } from 'react-native';
-import React from 'react';
 import { Colors } from '@/constants/Colors';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
+import React from 'react';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import ThemedText from '../ThemedText';
 interface BackButtonProps {
     title: string;
@@ -16,7 +16,6 @@ interface BackButtonProps {
 }
 
 class BackButton extends React.Component<BackButtonProps> {
-    private appreance: ColorSchemeName = Appearance.getColorScheme();
 
     render(): React.ReactNode {
         const { title, subtitle, content, p1, p2, p3, p4, showProgress } = this.props;
@@ -91,7 +90,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 2,
-        backgroundColor: Appearance.getColorScheme() === "dark" ? "#000000" : '#f7f7f7',
+        backgroundColor: '#f7f7f7',
         borderRadius: 99,
         paddingLeft: 6,
         paddingVertical: 5,

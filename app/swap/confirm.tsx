@@ -4,7 +4,7 @@ import { IList, ITransaction, UserData } from "@/interface/interface";
 import logger from "@/logger/logger";
 import { router, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { Appearance, ColorSchemeName, Platform, StyleSheet, TouchableOpacity } from "react-native";
+import { Platform, StyleSheet, TouchableOpacity } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { Image } from "expo-image";
 import Defaults from "../default/default";
@@ -62,7 +62,6 @@ enum Direction {
 
 export default class SwapConfirmScreen extends React.Component<IProps, IState> {
     private session: UserData = sessionManager.getUserData();
-    private appreance: ColorSchemeName = Appearance.getColorScheme();
     private readonly title = "Swap Confirm Screen";
     private swap: ISwapPayload;
     private notificationListener: any;
@@ -174,7 +173,7 @@ export default class SwapConfirmScreen extends React.Component<IProps, IState> {
                 <ThemedView style={{
                     flexDirection: 'row',
                     gap: 5,
-                    backgroundColor: this.appreance === "dark" ? "#272727" : 'white',
+                    backgroundColor: 'white',
                     padding: 2,
                     paddingRight: 6,
                     borderRadius: 100,
@@ -202,7 +201,7 @@ export default class SwapConfirmScreen extends React.Component<IProps, IState> {
                 <ThemedText
                     style={{
                         fontSize: 12,
-                        color: this.appreance === "dark" ? '#e5e5e5' : '#757575',
+                        color: '#757575',
                         fontFamily: 'AeonikRegular',
                         lineHeight: 14,
                     }}>
@@ -241,7 +240,7 @@ export default class SwapConfirmScreen extends React.Component<IProps, IState> {
                             <Image
                                 source={require("../../assets/icons/chevron-left.svg")}
                                 style={styles.backIcon}
-                                tintColor={this.appreance === "dark" ? Colors.light.background : "#000000"} />
+                                tintColor={"#000000"} />
                             <ThemedText style={styles.backText}>Back</ThemedText>
                         </TouchableOpacity>
                         <ThemedText style={styles.title}>Swap</ThemedText>
@@ -277,7 +276,7 @@ export default class SwapConfirmScreen extends React.Component<IProps, IState> {
                         <ThemedView
                             style={{
                                 padding: 12,
-                                backgroundColor: this.appreance === "dark" ? "#070707" : '#F7F7F7',
+                                backgroundColor: '#F7F7F7',
                                 borderRadius: 12,
                                 marginTop: 20,
                             }}
@@ -289,7 +288,7 @@ export default class SwapConfirmScreen extends React.Component<IProps, IState> {
                             <ThemedView
                                 style={{
                                     height: 1,
-                                    backgroundColor: this.appreance === "dark" ? '#1f1f1f' : '#E8E8E8',
+                                    backgroundColor: '#E8E8E8',
                                     width: '100%',
                                     marginTop: 12,
                                     marginBottom: 12,
@@ -322,7 +321,7 @@ export default class SwapConfirmScreen extends React.Component<IProps, IState> {
                         onClose={(): void => this.setState({ error_modal: !error_modal })}
                         message={{ title: error_title, description: error_message }} />}
                     {loading && <LoadingModal loading={loading} />}
-                    <StatusBar style={this.appreance === "dark" ? 'light' : "dark"} />
+                    <StatusBar style={"dark"} />
                 </ThemedSafeArea>
             </>
         )
@@ -344,7 +343,7 @@ const styles = StyleSheet.create({
     backButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: Appearance.getColorScheme() === "dark" ? '#070707' : '#f7f7f7',
+        backgroundColor: '#f7f7f7',
         borderRadius: 99,
         paddingVertical: 5,
         paddingRight: 20,
@@ -374,7 +373,7 @@ const styles = StyleSheet.create({
     },
     detailsContainer: {
         gap: 8,
-        backgroundColor: Appearance.getColorScheme() === "dark" ? '#070707' : '#F2F2F2',
+        backgroundColor: '#F2F2F2',
         paddingHorizontal: 12,
         paddingVertical: 10,
         borderRadius: 16,

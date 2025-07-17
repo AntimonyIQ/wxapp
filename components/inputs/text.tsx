@@ -1,15 +1,14 @@
 import { Colors } from '@/constants/Colors';
+import * as Clipboard from 'expo-clipboard';
+import { Image } from 'expo-image';
 import React from 'react';
 import {
-    TextInput,
+    KeyboardTypeOptions,
     Pressable,
     StyleSheet,
+    TextInput,
     Vibration,
-    KeyboardTypeOptions,
-    Appearance,
 } from 'react-native';
-import { Image } from 'expo-image';
-import * as Clipboard from 'expo-clipboard';
 import ThemedText from '../ThemedText';
 import ThemedView from '../ThemedView';
 
@@ -37,7 +36,6 @@ interface IState {
 }
 
 export default class TextField extends React.Component<IProps, IState> {
-    private appreance = Appearance.getColorScheme();
     constructor(props: IProps) {
         super(props);
         this.state = { toggleEye: false };
@@ -100,6 +98,7 @@ export default class TextField extends React.Component<IProps, IState> {
                 )}
                 <ThemedView style={styles.inputContainer}>
                     <TextInput
+                        key={toggleEye ? 'text-visible' : 'text-hidden'}
                         style={styles.input}
                         placeholder={placeholder}
                         value={textValue}
@@ -124,11 +123,14 @@ export default class TextField extends React.Component<IProps, IState> {
                         </Pressable>
                     )}
                     {showEye && (
-                        <Pressable onPress={() => this.setState({ toggleEye: !toggleEye })}>
+                        <Pressable
+                            onPress={() => {
+                                this.setState(prev => ({ toggleEye: !prev.toggleEye }));
+                            }}>
                             <Image
                                 source={!toggleEye ? require("../../assets/icons/eye.svg") : require("../../assets/icons/eyeoff.svg")}
                                 style={{ height: 24, width: 24 }}
-                                contentFit="contain" tintColor={this.appreance === "dark" ? Colors.dark.text : Colors.light.text}
+                                contentFit="contain" tintColor={Colors.light.text}
                                 transition={1000} />
                         </Pressable>
                     )}
@@ -141,7 +143,7 @@ export default class TextField extends React.Component<IProps, IState> {
 const styles = StyleSheet.create({
     container: {
         paddingHorizontal: 16,
-        backgroundColor: Appearance.getColorScheme() === "dark" ? "#000" : "#F7f7f7",
+        backgroundColor: "#F7f7f7",
         borderRadius: 10,
         marginBottom: 16,
         width: "100%",
@@ -150,21 +152,21 @@ const styles = StyleSheet.create({
         paddingBottom: 6,
         fontFamily: 'AeonikRegular',
         fontSize: 10,
-        color: Appearance.getColorScheme() === "dark" ? Colors.dark.text : Colors.light.text,
+        color: Colors.light.text,
         lineHeight: 12,
     },
     inputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         width: '100%',
-        backgroundColor: Appearance.getColorScheme() === "dark" ? "#000" : "#F7f7f7",
+        backgroundColor: "#F7f7f7",
     },
     input: {
         flex: 1,
         fontFamily: 'AeonikMedium',
         fontSize: 16,
-        color: Appearance.getColorScheme() === "dark" ? Colors.dark.text : Colors.light.text,
-        backgroundColor: Appearance.getColorScheme() === "dark" ? "#000" : "#F7f7f7",
+        color: Colors.light.text,
+        backgroundColor: "#F7f7f7",
         outlineColor: 'transparent',
         paddingVertical: 10,
         // ...(Platform.OS === 'web' ? { outline: "none" } : {})

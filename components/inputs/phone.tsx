@@ -5,7 +5,6 @@ import * as Clipboard from 'expo-clipboard';
 import { Image } from 'expo-image';
 import React from 'react';
 import {
-    Appearance,
     KeyboardTypeOptions,
     Pressable,
     StyleSheet,
@@ -43,7 +42,6 @@ interface IState {
 }
 
 export default class PhoneField extends React.Component<IProps, IState> {
-    private appreance = Appearance.getColorScheme();
     constructor(props: IProps) {
         super(props);
         this.state = { toggleEye: false, list_modal: false, code: "+234" };
@@ -117,7 +115,7 @@ export default class PhoneField extends React.Component<IProps, IState> {
                         <Image
                             source={require("../../assets/icons/chevron-left.svg")}
                             style={{ width: 20, height: 20, transform: [{ rotate: '90deg' }] }}
-                            tintColor={this.appreance === "dark" ? "#FFF" : "#000"} />
+                            tintColor={"#000"} />
                     </Pressable>
                     <TextInput
                         style={styles.input}
@@ -148,7 +146,7 @@ export default class PhoneField extends React.Component<IProps, IState> {
                             <Image
                                 source={!toggleEye ? require("../../assets/icons/eye.svg") : require("../../assets/icons/eyeoff.svg")}
                                 style={{ height: 24, width: 24 }}
-                                contentFit="contain" tintColor={this.appreance === "dark" ? Colors.dark.text : Colors.light.text}
+                                contentFit="contain" tintColor={Colors.light.text}
                                 transition={1000} />
                         </Pressable>
                     )}
@@ -167,7 +165,7 @@ export default class PhoneField extends React.Component<IProps, IState> {
 const styles = StyleSheet.create({
     container: {
         paddingHorizontal: 16,
-        backgroundColor: Appearance.getColorScheme() === "dark" ? "#000" : "#F7f7f7",
+        backgroundColor: "#F7f7f7",
         borderRadius: 10,
         marginBottom: 16,
         width: "100%",
@@ -176,7 +174,7 @@ const styles = StyleSheet.create({
         paddingBottom: 6,
         fontFamily: 'AeonikRegular',
         fontSize: 10,
-        color: Appearance.getColorScheme() === "dark" ? Colors.dark.text : Colors.light.text,
+        color: Colors.light.text,
         lineHeight: 12,
     },
     inputContainer: {
@@ -184,14 +182,14 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         width: '100%',
         gap: 10,
-        backgroundColor: Appearance.getColorScheme() === "dark" ? "#000" : "#F7f7f7",
+        backgroundColor: "#F7f7f7",
     },
     input: {
         flex: 1,
         fontFamily: 'AeonikMedium',
         fontSize: 16,
-        color: Appearance.getColorScheme() === "dark" ? Colors.dark.text : Colors.light.text,
-        backgroundColor: Appearance.getColorScheme() === "dark" ? "#000" : "#F7f7f7",
+        color: Colors.light.text,
+        backgroundColor: "#F7f7f7",
         outlineColor: 'transparent',
         paddingVertical: 10,
         // ...(Platform.OS === 'web' ? { outline: "none" } : {})

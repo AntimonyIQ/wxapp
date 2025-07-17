@@ -11,10 +11,13 @@
 // limitations under the License.
 
 import React from "react";
-import { Dimensions, FlatList, Platform, Pressable, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Dimensions, FlatList, Platform, Pressable, SafeAreaView, StyleSheet, TouchableOpacity } from "react-native";
 import { router, Stack } from "expo-router";
 import PrimaryButton from "@/components/button/primary";
 import { Image } from "expo-image";
+import ThemedView from "@/components/ThemedView";
+import ThemedText from "@/components/ThemedText";
+import { Colors } from "@/constants/Colors";
 
 interface IProps { }
 
@@ -94,7 +97,7 @@ export default class OnboardingScreen extends React.Component<IProps, IState> {
 
     renderItem = ({ item }: { item: Carouse }): React.JSX.Element => {
         return (
-            <View style={styles.carouselItemContainer}>
+            <ThemedView style={styles.carouselItemContainer}>
                 <TouchableOpacity
                     style={{}}>
                     <Image
@@ -104,11 +107,11 @@ export default class OnboardingScreen extends React.Component<IProps, IState> {
                         transition={1000}
                     />
                 </TouchableOpacity>
-                <View style={{ gap: 16, alignItems: 'center', paddingHorizontal: 20 }}>
-                    <Text style={styles.text}>{item.title}</Text>
-                    <Text style={styles.subtext}>{item.description}</Text>
-                </View>
-            </View>
+                <ThemedView style={{ gap: 16, alignItems: 'center', paddingHorizontal: 20 }}>
+                    <ThemedText style={styles.text}>{item.title}</ThemedText>
+                    <ThemedText style={styles.subtext}>{item.description}</ThemedText>
+                </ThemedView>
+            </ThemedView>
         );
     }
 
@@ -118,7 +121,7 @@ export default class OnboardingScreen extends React.Component<IProps, IState> {
             <>
                 <Stack.Screen options={{ title: 'Onboarding', headerShown: false }} />
                 <SafeAreaView style={styles.safeArea}>
-                    <View style={styles.container}>
+                    <ThemedView style={styles.container}>
                         <FlatList
                             data={this.carouselItem}
                             renderItem={this.renderItem}
@@ -133,7 +136,7 @@ export default class OnboardingScreen extends React.Component<IProps, IState> {
                             snapToAlignment="center"
                         />
 
-                        <View
+                        <ThemedView
                             style={{
                                 alignItems: 'center',
                                 justifyContent: 'flex-end',
@@ -143,7 +146,7 @@ export default class OnboardingScreen extends React.Component<IProps, IState> {
                                 width: '100%',
                             }}
                         >
-                            <View style={styles.dotView}>
+                            <ThemedView style={styles.dotView}>
                                 {this.carouselItem.map((_, index) => (
                                     <Pressable
                                         key={index.toString()}
@@ -153,25 +156,25 @@ export default class OnboardingScreen extends React.Component<IProps, IState> {
                                                 backgroundColor: pressed
                                                     ? 'white'
                                                     : currentIndex === index
-                                                        ? '#000000'
-                                                        : '#FFFFFF',
+                                                        ? Colors.blue
+                                                        : '#EEEEEE',
                                             },
                                         ]}
                                         onPress={() => this.scrollToIndex(index)}
                                     />
                                 ))}
-                            </View>
-                        </View>
+                            </ThemedView>
+                        </ThemedView>
 
-                        <View style={{ paddingHorizontal: 18, marginTop: 41, gap: 16, width: "100%" }}>
+                        <ThemedView style={{ paddingHorizontal: 18, marginTop: 41, gap: 16, width: "100%" }}>
                             <PrimaryButton
                                 Gradient
                                 title={'Create Account'}
                                 onPress={() => router.navigate('/onboarding/signup')}
                             />
                             <PrimaryButton title={'Login'} onPress={() => router.navigate('/onboarding/login')} />
-                        </View>
-                    </View>
+                        </ThemedView>
+                    </ThemedView>
                 </SafeAreaView>
             </>
         )
@@ -182,12 +185,14 @@ const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
         paddingTop: Platform.OS === 'android' ? 50 : Platform.OS === "web" ? 20 : 0,
+        backgroundColor: "#FFF"
     },
     container: {
         alignItems: 'center',
         justifyContent: 'center',
         padding: 20,
         height: '100%',
+        paddingBottom: 40,
     },
     link: {
         marginTop: 15,

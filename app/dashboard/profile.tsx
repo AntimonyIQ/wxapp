@@ -21,7 +21,7 @@ import { createAvatar, Result } from '@dicebear/core';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import React from 'react';
-import { Appearance, Linking, StyleSheet } from 'react-native';
+import { Linking, StyleSheet } from 'react-native';
 import sessionManager from '../../session/session';
 
 interface IProps { }
@@ -53,7 +53,7 @@ export default class TabTwoScreen extends React.Component<IProps, IState> {
     render() {
         return (
             <ParallaxScrollView
-                headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
+                headerBackgroundColor={{ light: '#D0D0D0', dark: '#D0D0D0' }}
                 headerImage={
                     <Image
                         source={this.avatar.toDataUri()}
@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
         padding: 18,
         borderRadius: 12,
         gap: 8,
-        backgroundColor: Appearance.getColorScheme() === "dark" ? "#0f0f0f" : "#F5F5F5",
+        backgroundColor: "#F5F5F5",
     },
     dialogMessage: {
         fontSize: 16,

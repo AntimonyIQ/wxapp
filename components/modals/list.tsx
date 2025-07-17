@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Modal, StyleSheet, TouchableWithoutFeedback, Appearance, Pressable, ColorSchemeName } from 'react-native';
+import { Modal, StyleSheet, TouchableWithoutFeedback, Pressable, ColorSchemeName } from 'react-native';
 import { Image } from 'expo-image';
 import ListButton from '../button/list';
 import { IList } from '@/interface/interface';

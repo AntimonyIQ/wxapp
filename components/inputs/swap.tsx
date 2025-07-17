@@ -1,6 +1,4 @@
 import {
-    Appearance,
-    ColorSchemeName,
     Image,
     NativeSyntheticEvent,
     Pressable,
@@ -25,7 +23,6 @@ interface SwapInputProps {
 }
 
 export default class SwapTextField extends React.Component<SwapInputProps> {
-    private appreance: ColorSchemeName = Appearance.getColorScheme();
     constructor(props: SwapInputProps) {
         super(props);
     }
@@ -62,7 +59,7 @@ export default class SwapTextField extends React.Component<SwapInputProps> {
                             <Image
                                 source={require("../../assets/icons/chevron-left-white.svg")}
                                 style={styles.chevronIcon}
-                                tintColor={this.appreance === "dark" ? "#FFF" : "#000000"} />
+                                tintColor={"#000000"} />
                         </Pressable>
                         <View style={styles.balanceContainer}>
                             <ThemedText style={styles.balanceText}>
@@ -85,7 +82,7 @@ const styles = StyleSheet.create({
         paddingLeft: 20,
         paddingRight: 13,
         borderRadius: 12,
-        backgroundColor: Appearance.getColorScheme() === "dark" ? '#060606' : '#F2F2F2',
+        backgroundColor: '#F2F2F2',
         flexDirection: 'row',
     },
     inputContainer: {
@@ -94,7 +91,7 @@ const styles = StyleSheet.create({
     },
     input: {
         fontSize: 24,
-        color: Appearance.getColorScheme() === "dark" ? '#ffffff' : '#1F1F1F',
+        color: '#1F1F1F',
         fontFamily: 'AeonikMedium',
     },
     priceText: {
@@ -109,7 +106,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignSelf: 'flex-end',
         gap: 5,
-        backgroundColor: Appearance.getColorScheme() === "dark" ? '#272727' : 'white',
+        backgroundColor: 'white',
         padding: 2,
         paddingRight: 6,
         borderRadius: 100,
