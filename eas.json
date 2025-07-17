@@ -10,6 +10,9 @@
             "node": "23.5.0",
             "ios": {
                 "simulator": true
+            },
+            "android": {
+                "buildType": "apk"
             }
         },
         "preview": {

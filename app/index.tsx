@@ -11,71 +11,96 @@
 // limitations under the License.
 
 import React from "react";
-import sessionManager from "../session/session";
-import { UserData } from "@/interface/interface";
-import { router } from "expo-router";
 import { StyleSheet, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
 import { Image } from "expo-image";
-import * as Device from 'expo-device';
-import * as Crypto from 'expo-crypto';
+import * as Device from "expo-device";
+import * as Crypto from "expo-crypto";
+import { router } from "expo-router";
+
+import sessionManager from "../session/session";
 import Handshake from "@/handshake/handshake";
+import { IParams, IRegistration, UserData } from "@/interface/interface";
 
 interface IProps { }
 
 interface IState { }
 
 export default class SplashScreen extends React.Component<IProps, IState> {
-    private session: UserData = sessionManager.getUserData();
     private timer: number | undefined;
+
     constructor(props: IProps) {
         super(props);
     }
 
     public componentDidMount(): void {
-        this.timer = setTimeout(() => this.handleSplashNavigation(), 1000);
-    }
-
-    private async handleSplashNavigation(): Promise<void> {
-        const { isLoggedIn, isRegistred, user } = this.session;
-
-        if (isLoggedIn === true && user?.refreshToken && user?.passkeyEnabled === true) {
-            router.navigate('/passkey');
-            return;
-        }
-
-        if (isRegistred === true) {
-            router.navigate('/onboarding/login');
-            return;
-        }
-
-        const client = Handshake.generate();
-        const devicename = Device.deviceName ?? "Unknown Device";
-        const deviceid = Crypto.randomUUID();
-
-        const sessionData: UserData = {
-            ...this.session,
-            client,
-            deviceid,
-            devicename,
-            isLoggedIn: false,
-            isRegistred: false,
-            isVerified: false,
-            user: undefined,
-        };
-
-        await sessionManager.login(sessionData);
-        router.navigate('/onboarding');
+        this.timer = setTimeout(() => {
+            this.handleSplashNavigation().catch(console.error);
+        }, 1000);
     }
 
     public componentWillUnmount(): void {
-        clearTimeout(this.timer);
+        if (this.timer) {
+            clearTimeout(this.timer);
+        }
+    }
+
+    private async handleSplashNavigation(): Promise<void> {
+        try {
+            const session = sessionManager.getUserData();
+
+            if (
+                session?.isLoggedIn === true &&
+                session.user?.refreshToken &&
+                session.user?.passkeyEnabled === true
+            ) {
+                router.replace("/passkey");
+                return;
+            }
+
+            if (session?.isRegistred === true) {
+                router.replace("/onboarding/login");
+                return;
+            }
+
+            const client = Handshake.generate();
+            const deviceid = Crypto.randomUUID();
+            const devicename = Device.deviceName ?? "Unknown Device";
+
+            const sessionData: UserData = {
+                client,
+                deviceid,
+                devicename,
+                isLoggedIn: false,
+                isRegistred: false,
+                isVerified: false,
+                user: undefined,
+                registration: {} as IRegistration,
+                authorization: "",
+                deviceId: "",
+                location: "",
+                markets: [],
+                transactions: [],
+                hideBalance: false,
+                totalBalanceNgn: 0,
+                totalBalanceUsd: 0,
+                passkey: "",
+                params: {} as IParams
+            };
+
+            await sessionManager.login(sessionData);
+            router.replace("/onboarding");
+        } catch (error) {
+            console.error("Splash navigation error:", error);
+            // Optionally fallback to login
+            router.replace("/onboarding/login");
+        }
     }
 
     public render(): React.ReactNode {
         return (
-            <View style={{ flex: 1 }}>
+            <View style={styles.root}>
                 <LinearGradient
                     colors={["#2B49AB", "#101C41"]}
                     start={{ x: 0, y: 0 }}
@@ -89,18 +114,21 @@ export default class SplashScreen extends React.Component<IProps, IState> {
                         transition={1000}
                     />
                 </LinearGradient>
-                <StatusBar style='light' />
+                <StatusBar style="light" />
             </View>
         );
     }
 }
 
 const styles = StyleSheet.create({
+    root: {
+        flex: 1,
+    },
     container: {
         flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        width: '100%',
-        height: '100%',
+        justifyContent: "center",
+        alignItems: "center",
+        width: "100%",
+        height: "100%",
     },
 });

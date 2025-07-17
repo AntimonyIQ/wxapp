@@ -42,7 +42,7 @@ TaskManager.defineTask(NOTIFICATION_TASK_IDENTIFIER, async () => {
     try {
         await Defaults.IS_NETWORK_AVAILABLE();
         const session: UserData = sessionManager.getUserData();
-        const res = await fetch(`${Defaults.API}/notification/user/${session.user?._id}}`, {
+        const res = await fetch(`${Defaults.API}/notification/user/${session.user?._id}`, {
             method: 'GET',
             headers: {
                 ...Defaults.HEADERS,
@@ -104,20 +104,31 @@ export default class RootLayout extends React.Component<{}, RootLayoutState> {
         this.state = { loaded: false, expoPushToken: "" };
     }
 
-    async componentDidMount() {
-        await this.loadFonts();
-        this.setState({ loaded: true });
-        SplashScreen.hideAsync();
-        this.tasks();
-        registerForPushNotificationsAsync().then(token => this.setState({ expoPushToken: token ? token : "" }));
+    public async componentDidMount() {
+        try {
+            await SplashScreen.preventAutoHideAsync();
 
-        this.notificationListener = addNotificationReceivedListener(notification => {
-            logger.log("notification: ", notification);
-        });
+            await this.loadFonts();
+            this.setState({ loaded: true });
+            await SplashScreen.hideAsync();
 
-        this.responseListener = addNotificationResponseReceivedListener(response => {
-            logger.log("response: ", response);
-        });
+            this.tasks();
+
+            const token = await registerForPushNotificationsAsync();
+            this.setState({ expoPushToken: token ?? "" });
+
+            this.notificationListener = addNotificationReceivedListener(notification => {
+                logger.log("notification: ", notification);
+            });
+
+            this.responseListener = addNotificationResponseReceivedListener(response => {
+                logger.log("response: ", response);
+            });
+        } catch (err) {
+            console.error("❌ Error during app init:", err);
+            this.setState({ loaded: true });
+            await SplashScreen.hideAsync();
+        }
     }
 
     async loadFonts() {
@@ -158,7 +169,13 @@ export default class RootLayout extends React.Component<{}, RootLayoutState> {
     };
 
     render() {
-        if (!this.state.loaded) { return null }
+        if (!this.state.loaded) {
+            return (
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                    <Text>Loading...</Text>
+                </View>
+            );
+        }
 
         return (
             <ThemeProvider value={Appearance.getColorScheme() === 'dark' ? DarkTheme : DefaultTheme}>

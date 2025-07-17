@@ -8,6 +8,9 @@
     "scheme": "wealthx",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.wealthx.app.wxconcept",
