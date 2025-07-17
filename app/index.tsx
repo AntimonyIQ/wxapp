@@ -19,8 +19,8 @@ import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
 import { Image } from "expo-image";
 import * as Device from 'expo-device';
-import Handshake from "@/cryptography/handshake";
 import * as Crypto from 'expo-crypto';
+import Handshake from "@/handshake/handshake";
 
 interface IProps { }
 
