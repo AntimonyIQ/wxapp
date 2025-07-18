@@ -332,11 +332,11 @@ export default class AccountSettingScreen extends React.Component<IProps, IState
                                     }
                                     {this.session.user?.isPhoneNumberVerified === false
                                         ? <ProfileButton text={'Verify Phone Number'} onPress={() => router.navigate('/phone')} />
-                                        : <ProfileSwitch text={'Phone verified'} isEnabled={this.session.user?.isPhoneNumberVerified ? true : false} onValueChange={(): void => { }} />
+                                        : <VerifiedButton text={'Phone verified'} onPress={(): void => { }} />
                                     }
                                     {this.session.user?.isIdentityVerified === false
                                         ? <ProfileButton text={'Identity verification'} hideBorder={true} onPress={this.identification} />
-                                        : <ProfileSwitch text={'Identity Verifiedd'} hideBorder={true} isEnabled={this.session.user?.isIdentityVerified ? true : false} onValueChange={(): void => { }} />
+                                        : <VerifiedButton text={'Identity Verified'} hideBorder={true} onPress={(): void => { }} />
                                     }
                                 </ThemedView>
                             </ThemedView>

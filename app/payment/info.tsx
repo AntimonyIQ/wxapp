@@ -15,7 +15,7 @@ import sessionManager from "@/session/session";
 import { UserData } from "@/interface/interface";
 import logger from "@/logger/logger";
 import { router, Stack } from "expo-router";
-import { Appearance, ColorSchemeName, Platform, Pressable, StyleSheet } from "react-native";
+import { Platform, Pressable, StyleSheet } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import PrimaryButton from "@/components/button/primary";
 import { IList } from "@/interface/interface";
@@ -31,7 +31,6 @@ interface IState { }
 
 export default class PaymentInfoScreen extends React.Component<IProps, IState> {
     private session: UserData = sessionManager.getUserData();
-    private appreance: ColorSchemeName = Appearance.getColorScheme();
     private readonly title = "Info Bank details";
     constructor(props: IProps) {
         super(props);
@@ -102,7 +101,7 @@ export default class PaymentInfoScreen extends React.Component<IProps, IState> {
                         <ThemedView
                             style={{
                                 width: '100%',
-                                backgroundColor: this.appreance === "dark" ? "#0e0e0e" : '#F7F7F7',
+                                backgroundColor: '#F7F7F7',
                                 height: '99%',
                                 position: 'absolute',
                                 bottom: -30,
@@ -117,14 +116,14 @@ export default class PaymentInfoScreen extends React.Component<IProps, IState> {
                                 style={{
                                     padding: 4,
                                     borderRadius: 99,
-                                    backgroundColor: this.appreance === "dark" ? "#333333" : '#e7e7e7',
+                                    backgroundColor: '#e7e7e7',
                                     right: 10,
                                     alignSelf: 'flex-end',
                                 }}
                             >
                                 <Image
                                     source={require("../../assets/icons/close.svg")}
-                                    tintColor={this.appreance === "dark" ? "#fff" : "#000"}
+                                    tintColor={"#000"}
                                     style={{ width: 20, height: 20 }} />
                             </Pressable>
                             <ThemedView style={{ marginTop: 53, gap: 24, paddingHorizontal: 16, backgroundColor: "transparent" }}>
@@ -212,7 +211,7 @@ const styles = StyleSheet.create({
     backButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: Appearance.getColorScheme() === "dark" ? "#000000" : '#f7f7f7',
+        backgroundColor: '#f7f7f7',
         borderRadius: 99,
         paddingVertical: 5,
         paddingRight: 20,

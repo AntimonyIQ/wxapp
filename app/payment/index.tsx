@@ -15,7 +15,7 @@ import sessionManager from "@/session/session";
 import { IBank, IResponse, UserData } from "@/interface/interface";
 import logger from "@/logger/logger";
 import { router, Stack } from "expo-router";
-import { Appearance, ColorSchemeName, FlatList, Platform, RefreshControl, StyleSheet, Text } from "react-native";
+import { FlatList, Platform, RefreshControl, StyleSheet, Text } from "react-native";
 import { Image } from "expo-image";
 import PrimaryButton from "@/components/button/primary";
 import Defaults from "../default/default";
@@ -37,7 +37,6 @@ interface IState {
 
 export default class PaymentScreen extends React.Component<IProps, IState> {
     private session: UserData = sessionManager.getUserData();
-    private appreance: ColorSchemeName = Appearance.getColorScheme();
     private readonly title = "Payment Screen";
     constructor(props: IProps) {
         super(props);
@@ -184,7 +183,7 @@ const styles = StyleSheet.create({
     backButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: Appearance.getColorScheme() === "dark" ? "#000000" : '#f7f7f7',
+        backgroundColor: '#f7f7f7',
         borderRadius: 99,
         paddingVertical: 5,
         paddingRight: 20,
@@ -275,7 +274,7 @@ const styles = StyleSheet.create({
         padding: 12,
         borderRadius: 10,
         width: "100%",
-        backgroundColor: Appearance.getColorScheme() === "dark" ? '#0e0e0e' : '#F0F0F0',
+        backgroundColor: '#F0F0F0',
     },
     bankAccountInfo: {
         marginLeft: 12,

@@ -21,7 +21,7 @@ import AddressValidator from "@/validator/address";
 import { Image } from "expo-image";
 import { router, Stack, } from "expo-router";
 import React from "react";
-import { Appearance, ColorSchemeName, Platform, Pressable, StyleSheet, TouchableOpacity } from "react-native";
+import { Platform, Pressable, StyleSheet, TouchableOpacity } from "react-native";
 
 interface IProps { }
 
@@ -33,7 +33,6 @@ interface IState {
 
 export default class SendInputAddressScreen extends React.Component<IProps, IState> {
     private session: UserData = sessionManager.getUserData();
-    private appreance: ColorSchemeName = Appearance.getColorScheme();
     private readonly title = "Send Input Address Screen";
     private validator: AddressValidator;
     constructor(props: IProps) {
@@ -69,7 +68,7 @@ export default class SendInputAddressScreen extends React.Component<IProps, ISta
                             <Image
                                 source={require("../../assets/icons/chevron_right.svg")}
                                 style={styles.backIcon}
-                                tintColor={this.appreance === "dark" ? Colors.light.background : "#000000"} />
+                                tintColor={"#000000"} />
                             <ThemedText style={styles.backText}>Back</ThemedText>
                         </TouchableOpacity>
                         <ThemedText style={styles.title}>Send {currency}</ThemedText>

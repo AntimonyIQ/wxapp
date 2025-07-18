@@ -45,11 +45,9 @@ interface IState {
 export default class LoginScreen extends React.Component<IProps, IState> {
     private session: UserData = sessionManager.getUserData();
     private readonly title = "Login Screen";
-    private user: IUser | undefined;
     constructor(props: IProps) {
         super(props);
         this.state = { email: '', password: '', loading: false, emailFocused: true, passwordFocused: false, location: null, authcode: '', authmodal: false };
-        this.user = this.session.user;
     }
 
     componentDidMount(): void {
@@ -175,7 +173,7 @@ export default class LoginScreen extends React.Component<IProps, IState> {
                                         Gradient
                                         title={loading ? "Logging In..." : "Log In"}
                                         onPress={(): void => {
-                                            this.user?.twoFactorEnabled === true
+                                            this.session.user?.twoFactorEnabled === true
                                                 ? this.setState({ authmodal: true })
                                                 : this.handleLogin();
                                         }}
@@ -198,7 +196,7 @@ export default class LoginScreen extends React.Component<IProps, IState> {
                         visible={authmodal}
                         onClose={() => this.setState({ authmodal: false })}
                         onPinComplete={(pin: string) => {
-                            this.setState({ authcode: pin });
+                            this.setState({ authcode: pin, authmodal: false });
                             this.handleLogin();
                         }}
                     />

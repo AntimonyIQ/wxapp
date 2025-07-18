@@ -14,7 +14,7 @@ import React from "react";
 import sessionManager from "@/session/session";
 import logger from "@/logger/logger";
 import { router, Stack } from "expo-router";
-import { ActivityIndicator, Appearance, ColorSchemeName, Keyboard, Platform, Pressable, StyleSheet, TouchableOpacity } from "react-native";
+import { ActivityIndicator, Keyboard, Platform, Pressable, StyleSheet, TouchableOpacity } from "react-native";
 import { Image } from "expo-image";
 import Defaults from "../default/default";
 import MessageModal from "@/components/modals/message";
@@ -58,7 +58,6 @@ interface IState {
 
 export default class SendScreen extends React.Component<IProps, IState> {
     private session: UserData = sessionManager.getUserData();
-    private appreance: ColorSchemeName = Appearance.getColorScheme();
     private readonly title = "Send Screen";
     private notificationListener: any;
     private responseListener: any;

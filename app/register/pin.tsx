@@ -1,7 +1,7 @@
 import React from "react";
 import sessionManager from "@/session/session";
 import { IRegistration, UserData } from "@/interface/interface";
-import { Appearance, ColorSchemeName, FlatList, Platform, StyleSheet, TextInput, TouchableOpacity } from "react-native";
+import { FlatList, Platform, StyleSheet, TextInput, TouchableOpacity } from "react-native";
 import logger from "@/logger/logger";
 import { router, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -24,7 +24,6 @@ export default class RegisterPinScreen extends React.Component<IProps, IState> {
     private session: UserData = sessionManager.getUserData();
     private registration: IRegistration;
     private readonly title = "Create Pin";
-    private appreance: ColorSchemeName = Appearance.getColorScheme();
     private pinRefs: React.RefObject<TextInput | null>[] = Array(4).fill(null).map(() => React.createRef<TextInput>());
 
     constructor(props: IProps) {
@@ -175,7 +174,7 @@ export default class RegisterPinScreen extends React.Component<IProps, IState> {
                         />
                     </ThemedView>
                 </ThemedSafeArea>
-                <StatusBar style={this.appreance === "dark" ? "light" : "dark"} />
+                <StatusBar style={"dark"} />
             </>
         )
     }

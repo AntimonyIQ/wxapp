@@ -460,10 +460,6 @@ export default class DashboardScreen extends React.Component<IProps, IState> {
                                                     source={require("../../assets/icons/chevron-left.svg")}
                                                     style={{ width: 20, height: 20 }} />
                                             </Pressable>
-                                            {/**{loading &&
-                                                <View style={{ backgroundColor: this.appreance === "dark" ? "#000" : "#FFF", borderRadius: 8, width: "100%", height: 300, flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                                                    <ActivityIndicator size={40} color={Colors.blue} />
-                                                </View>}*/}
                                             {transactions.length === 0 &&
                                                 <View style={{ backgroundColor: "#FFF", borderRadius: 8, width: "100%", height: 300, flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
                                                     <Image

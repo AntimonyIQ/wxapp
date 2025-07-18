@@ -10,15 +10,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import logger from '@/logger/logger';
 import { Stack } from 'expo-router';
 import React from 'react';
 
 export default class VerifyLayout extends React.Component {
-
-    componentDidMount(): void {
-        logger.clear();
-    }
     render(): React.ReactNode {
         return (
             <Stack></Stack>

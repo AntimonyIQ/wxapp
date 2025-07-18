@@ -4,7 +4,7 @@ import { IMarket, ITransaction, UserData } from "@/interface/interface";
 import logger from "@/logger/logger";
 import { router, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { Appearance, ColorSchemeName, Platform, Pressable, ScrollView, StyleSheet } from "react-native";
+import { Platform, Pressable, ScrollView, StyleSheet } from "react-native";
 import { TouchableOpacity } from "react-native";
 import { Image } from "react-native";
 import Defaults from "../default/default";
@@ -23,7 +23,6 @@ interface IState {
 
 export default class TransactionDetailsScreen extends React.Component<IProps, IState> {
     private session: UserData = sessionManager.getUserData();
-    private appreance: ColorSchemeName = Appearance.getColorScheme();
     private readonly title = "Transaction Details";
     private readonly transactiontypesupport: Array<string> = ["p2p", "normal", "buy", "sell", "transfer", "deposit", "sweep", "send", "withdrawal"];
     private markets: IMarket[];
@@ -81,7 +80,7 @@ export default class TransactionDetailsScreen extends React.Component<IProps, IS
                             onPress={() => router.back()}>
                             <Image
                                 source={require("../../assets/icons/chevron-left.svg")}
-                                tintColor={this.appreance === "dark" ? "#ffffff" : "#000000"}
+                                tintColor={"#000000"}
                                 style={styles.backIcon} />
                             <ThemedText style={styles.backText}>Back</ThemedText>
                         </TouchableOpacity>
@@ -137,7 +136,7 @@ export default class TransactionDetailsScreen extends React.Component<IProps, IS
                                         <ThemedText style={styles.infoLabel}>More Details</ThemedText>
                                         <Image
                                             source={require("../../assets/icons/chevron-left.svg")}
-                                            tintColor={this.appreance === "dark" ? "#ffffff" : "#000000"}
+                                            tintColor={"#000000"}
                                             style={[styles.backIcon, { transform: [{ rotate: "180deg" }] }]} />
                                     </ThemedView>
                                 </Pressable>
@@ -167,7 +166,7 @@ const styles = StyleSheet.create({
     backButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: Appearance.getColorScheme() === "dark" ? '#070707' : '#f7f7f7',
+        backgroundColor: '#f7f7f7',
         borderRadius: 99,
         paddingVertical: 5,
         paddingRight: 20,

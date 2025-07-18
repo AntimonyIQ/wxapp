@@ -14,7 +14,7 @@ import React from "react";
 import sessionManager from "@/session/session";
 import logger from "@/logger/logger";
 import { router, Stack } from "expo-router";
-import { Appearance, ColorSchemeName, Platform, StyleSheet, TouchableOpacity } from "react-native";
+import { Platform, StyleSheet, TouchableOpacity } from "react-native";
 import { IList, UserData, IUser } from "@/interface/interface";
 import { Colors } from "@/constants/Colors";
 import { Image } from "expo-image";
@@ -29,7 +29,6 @@ interface IState { }
 
 export default class AccountScreen extends React.Component<IProps, IState> {
     private session: UserData = sessionManager.getUserData();
-    private appreance: ColorSchemeName = Appearance.getColorScheme();
     private readonly title = "Account Screen";
     private user: IUser;
     private readonly avatar = "https://api.dicebear.com/8.x/micah/svg";
@@ -75,7 +74,7 @@ export default class AccountScreen extends React.Component<IProps, IState> {
                             <Image
                                 source={require("../../assets/icons/chevron_right.svg")}
                                 style={styles.backIcon}
-                                tintColor={this.appreance === "dark" ? Colors.light.background : "#000000"} />
+                                tintColor={"#000000"} />
                             <ThemedText style={styles.backText}>Back</ThemedText>
                         </TouchableOpacity>
                         <ThemedText style={styles.title}>Account details</ThemedText>

@@ -113,8 +113,8 @@ export default class WelcomePhoneVerifcationScreen extends React.Component<IProp
                                 }}
                             >
                                 <Image
-                                    source={require("../../assets/icons/welcome.svg")}
-                                    style={{ width: 230, height: 230 }}
+                                    source={require("../../assets/icons/phonesms.svg")}
+                                    style={{ width: 150, height: 150 }}
                                     contentFit="contain"
                                     transition={1000}
                                 />

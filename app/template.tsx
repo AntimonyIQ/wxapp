@@ -4,7 +4,7 @@ import { UserData } from "@/interface/interface";
 import logger from "@/logger/logger";
 import { router, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { Appearance, ColorSchemeName, SafeAreaView, View } from "react-native";
+import { SafeAreaView, View } from "react-native";
 
 interface IProps { }
 
@@ -12,7 +12,6 @@ interface IState { }
 
 export default class TemplateScreen extends React.Component<IProps, IState> {
     private session: UserData = sessionManager.getUserData();
-    private appreance: ColorSchemeName = Appearance.getColorScheme();
     private readonly title = "Template Screen";
     constructor(props: IProps) {
         super(props);
@@ -32,7 +31,7 @@ export default class TemplateScreen extends React.Component<IProps, IState> {
                 <SafeAreaView>
                     <View></View>
                 </SafeAreaView>
-                <StatusBar style='light' />
+                <StatusBar style='dark' />
             </>
         )
     }

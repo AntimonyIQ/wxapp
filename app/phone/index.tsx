@@ -130,7 +130,7 @@ export default class VerifyPhoneScreen extends React.Component<IProps, IState> {
                     'x-wealthx-devicename': this.session.devicename,
                     Authorization: `Bearer ${this.session.authorization}`,
                 },
-                body: JSON.stringify({ code: code }),
+                body: JSON.stringify({ otp: code }),
             });
 
             const data = await res.json();
@@ -140,7 +140,7 @@ export default class VerifyPhoneScreen extends React.Component<IProps, IState> {
                     ...this.session,
                     user: {
                         ...this.session.user as IUser,
-                        twoFactorEnabled: !this.session.user?.twoFactorEnabled,
+                        isPhoneNumberVerified: !this.session.user?.isPhoneNumberVerified,
                     }
                 });
                 Defaults.TOAST('2FA setup successfully', "Success", "success");

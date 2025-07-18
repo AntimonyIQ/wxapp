@@ -11,7 +11,7 @@
 // limitations under the License.
 
 import React from "react";
-import { Appearance, ColorSchemeName, Platform, ScrollView, StyleSheet } from "react-native";
+import { Platform, ScrollView, StyleSheet } from "react-native";
 import logger from "@/logger/logger";
 import { IRegistration, IResponse, UserData } from "@/interface/interface";
 import sessionManager from "@/session/session";
@@ -81,7 +81,6 @@ interface IState {
 
 export default class SignupScreen extends React.Component<IProps, IState> {
     private session: UserData = sessionManager.getUserData();
-    private appreance: ColorSchemeName = Appearance.getColorScheme();
     private readonly title = "Create an account";
     constructor(props: IProps) {
         super(props);
@@ -286,7 +285,7 @@ export default class SignupScreen extends React.Component<IProps, IState> {
                         </ThemedView>
                     </ScrollView>
                     <LoadingModal loading={loading} />
-                    <StatusBar style={this.appreance === "dark" ? 'light' : "dark"} />
+                    <StatusBar style={"dark"} />
                 </ThemedSafeArea>
             </>
         )

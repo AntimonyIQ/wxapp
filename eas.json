@@ -48,7 +48,7 @@
         "production": {
             "ios": {
                 "appleId": "wealthx01@gmail.com",
-                "ascAppId": "1631695138",
+                "ascAppId": "6736343501",
                 "ascApiKeyPath": "./AuthKey_2R2F588664.p8",
                 "ascApiKeyIssuerId": "f6b2d207-32da-40f9-a0e7-c9e7ecfd326a"
             }

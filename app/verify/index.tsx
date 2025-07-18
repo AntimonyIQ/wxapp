@@ -12,7 +12,7 @@
 
 import React from "react";
 import sessionManager from "@/session/session";
-import { ActivityIndicator, Appearance, Dimensions, FlatList, Platform, Pressable, StyleSheet, TextInput, View } from "react-native";
+import { ActivityIndicator, Dimensions, FlatList, Platform, Pressable, StyleSheet, TextInput, View } from "react-native";
 import logger from "@/logger/logger";
 import { router, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -21,7 +21,7 @@ import { Colors } from "@/constants/Colors";
 import LoadingModal from "@/components/modals/loading";
 import PrimaryButton from "@/components/button/primary";
 import Defaults from "../default/default";
-import { IRegistration, IResponse, UserData } from "@/interface/interface";
+import { IResponse, UserData } from "@/interface/interface";
 import ThemedView from "@/components/ThemedView";
 import ThemedSafeArea from "@/components/ThemeSafeArea";
 import ThemedText from "@/components/ThemedText";
@@ -42,7 +42,6 @@ const { height } = Dimensions.get("window");
 export default class VerifyScreen extends React.Component<IProps, IState> {
     private session: UserData = sessionManager.getUserData();
     private readonly title = "Check your email";
-    private registration: IRegistration;
     private inputRefs: React.RefObject<TextInput | null>[] = Array(4).fill(null).map(() => React.createRef<TextInput>());
     private interval: number | null = null;
 
@@ -55,10 +54,6 @@ export default class VerifyScreen extends React.Component<IProps, IState> {
             resetLoading: false,
             resendCooldown: 120, // 2 minutes
         };
-        if (!this.session) {
-            logger.log("Session not found. Redirecting to login screen.");
-        }
-        this.registration = this.session.registration;
     }
 
     componentDidMount(): void {
@@ -127,7 +122,10 @@ export default class VerifyScreen extends React.Component<IProps, IState> {
                     'x-wealthx-deviceid': this.session.deviceId,
                     'x-wealthx-location': this.session.location,
                 },
-                body: JSON.stringify({ email: this.registration.email, otp: otp.join("") }),
+                body: JSON.stringify({
+                    email: this.session.registration.email || "",
+                    otp: otp.join("")
+                }),
             });
 
             const data: IResponse = await res.json();
@@ -159,7 +157,7 @@ export default class VerifyScreen extends React.Component<IProps, IState> {
                     'x-wealthx-deviceid': this.session.deviceid,
                     'x-wealthx-location': this.session.location,
                 },
-                body: JSON.stringify({ email: this.registration.email }),
+                body: JSON.stringify({ email: this.session.registration.email || "" }),
             });
 
             const data = await res.json();
@@ -208,6 +206,7 @@ export default class VerifyScreen extends React.Component<IProps, IState> {
                             </ThemedView>
 
                             <FlatList
+                                scrollEnabled={false}
                                 data={otp}
                                 renderItem={this.renderInputItem}
                                 keyExtractor={(_item, index) => index.toString()}
@@ -288,8 +287,8 @@ const styles = StyleSheet.create({
     input: {
         width: 50,
         height: 50,
-        color: Appearance.getColorScheme() === "dark" ? Colors.dark.text : Colors.light.text,
-        backgroundColor: Appearance.getColorScheme() === "dark" ? "#000" : '#F7F7F7',
+        color: Colors.light.text,
+        backgroundColor: '#F7F7F7',
         borderRadius: 10,
         fontSize: 24,
         textAlign: 'center',

@@ -3,7 +3,7 @@ import sessionManager from "@/session/session";
 import logger from "@/logger/logger";
 import { router, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { Appearance, ColorSchemeName, Platform, Pressable, ScrollView, StyleSheet, TouchableOpacity } from "react-native";
+import { Platform, Pressable, ScrollView, StyleSheet, TouchableOpacity } from "react-native";
 import { Image } from "expo-image";
 import Defaults from "../default/default";
 import { ITransaction, UserData } from "@/interface/interface";
@@ -38,7 +38,6 @@ export default class TransactionScreen extends React.Component<IProps, IState> {
     private readonly tabs: Array<string> = Object.keys(Tabs);
     private session: UserData = sessionManager.getUserData();
     private readonly status: Array<string> = ["all", "success", "failed", "pending"];
-    private appreance: ColorSchemeName = Appearance.getColorScheme();
     private readonly title = "Transactions";
     private transaction: ITransaction = {} as ITransaction;
     constructor(props: IProps) {
@@ -93,7 +92,7 @@ export default class TransactionScreen extends React.Component<IProps, IState> {
                             onPress={() => router.back()}>
                             <Image
                                 source={require("../../assets/icons/chevron-left.svg")}
-                                tintColor={this.appreance === "dark" ? "#ffffff" : "#000000"}
+                                tintColor={"#000000"}
                                 style={styles.backIcon} />
                             <ThemedText style={styles.backText}>Back</ThemedText>
                         </TouchableOpacity>
@@ -150,7 +149,7 @@ const styles = StyleSheet.create({
     backButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: Appearance.getColorScheme() === "dark" ? '#070707' : '#f7f7f7',
+        backgroundColor: '#f7f7f7',
         borderRadius: 99,
         paddingVertical: 5,
         paddingRight: 20,

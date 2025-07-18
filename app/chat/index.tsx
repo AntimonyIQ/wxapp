@@ -4,7 +4,7 @@ import { UserData, IUser } from "@/interface/interface";
 import logger from "@/logger/logger";
 import { router, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { Appearance, ColorSchemeName, Platform, Pressable, ScrollView, StyleSheet } from "react-native";
+import { Platform, Pressable, ScrollView, StyleSheet } from "react-native";
 import { TouchableOpacity } from "react-native";
 import { Image } from "expo-image";
 import TextField from "@/components/inputs/text";
@@ -28,18 +28,11 @@ interface IState {
 
 export default class ChatScreen extends React.Component<IProps, IState> {
     private session: UserData = sessionManager.getUserData();
-    private appreance: ColorSchemeName = Appearance.getColorScheme();
     private readonly title = "Chat with us";
     private scrollView: ScrollView | null = null;
-    private user: IUser;
     constructor(props: IProps) {
         super(props);
         this.state = { message: "", loading: true, isSending: false, isTyping: false, chats: [], replayId: "" }
-        if (!this.session || !this.session.isLoggedIn) {
-            logger.log("Session not found. Redirecting to login screen.");
-            router.dismissTo("/");
-        };
-        this.user = this.session.user as IUser;
     }
 
     componentDidMount(): void {
@@ -105,7 +98,7 @@ export default class ChatScreen extends React.Component<IProps, IState> {
                             onPress={() => router.back()}>
                             <Image
                                 source={require("../../assets/icons/chevron-left.svg")}
-                                tintColor={this.appreance === "dark" ? "#ffffff" : "#000000"}
+                                tintColor={"#000000"}
                                 style={styles.backIcon} />
                             <ThemedText style={styles.backText}>Back</ThemedText>
                         </TouchableOpacity>
@@ -175,7 +168,7 @@ export default class ChatScreen extends React.Component<IProps, IState> {
                             style={{ backgroundColor: Colors.blue, width: 45, height: 45, flexDirection: "column", alignItems: "center", justifyContent: "center", borderRadius: 360, transform: [{ translateY: -10 }] }}>
                             <Image
                                 source={require("../../assets/icons/send.svg")}
-                                tintColor={this.appreance === "dark" ? "#FFF" : "#000"}
+                                tintColor={"#000"}
                                 style={{ width: 21, height: 21, }}></Image>
                         </Pressable>
                     </ThemedView>
@@ -203,7 +196,7 @@ const styles = StyleSheet.create({
     backButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: Appearance.getColorScheme() === "dark" ? '#070707' : '#f7f7f7',
+        backgroundColor: '#f7f7f7',
         borderRadius: 99,
         paddingVertical: 5,
         paddingRight: 20,

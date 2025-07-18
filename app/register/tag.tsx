@@ -1,7 +1,7 @@
 import React from "react";
 import sessionManager from "@/session/session";
 import { IRegistration, UserData } from "@/interface/interface";
-import { Appearance, Platform, Pressable, StyleSheet } from "react-native";
+import { Platform, Pressable, StyleSheet } from "react-native";
 import logger from "@/logger/logger";
 import { router, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -25,7 +25,6 @@ interface IState {
 export default class TagScreen extends React.Component<IProps, IState> {
     private session: UserData = sessionManager.getUserData();
     private registration: IRegistration;
-    private appearance = Appearance.getColorScheme();
     private readonly title = "Set your WX Tag";
     constructor(props: IProps) {
         super(props);
@@ -126,7 +125,7 @@ export default class TagScreen extends React.Component<IProps, IState> {
                         <LoadingModal loading={loading} />
                     </ThemedView>
                 </ThemedSafeArea>
-                <StatusBar style={this.appearance === "dark" ? "light" : "dark"} />
+                <StatusBar style={"dark"} />
             </>
         )
     }

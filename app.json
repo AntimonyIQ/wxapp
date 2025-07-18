@@ -13,7 +13,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.wealthx.app.wxconcept",
+      "bundleIdentifier": "com.wealthx.wallet",
       "buildNumber": "25",
       "infoPlist": {
         "UIFileSharingEnabled": true,
