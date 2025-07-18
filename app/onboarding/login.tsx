@@ -58,19 +58,11 @@ export default class LoginScreen extends React.Component<IProps, IState> {
 
     private geolocation = async () => {
         try {
-            const res = await fetch('https://ipapi.co/json/', {
-                method: 'GET',
-                headers: { "Accept": "application/json" }
-            });
-
-            if (!res.ok) throw new Error('Failed to fetch location data from IP! ' + res.status);
-
-            const data = await res.json();
-            if (!data) throw new Error('Failed to fetch location data from IP!');
-
-            this.setState({ location: data });
-        } catch (error) {
-            console.error('Unable to fetch location from IP!', error);
+            const res = await fetch('https://ipapi.co/json/');
+            const data = res.ok ? await res.json() : null;
+            if (data) this.setState({ location: data });
+        } catch (_) {
+            // Ignore error silently
         }
     };
 
