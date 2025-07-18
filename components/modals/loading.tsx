@@ -17,7 +17,8 @@ export default class LoadingModal extends React.Component<IProps, {}> {
                 animationType='none'
                 visible={loading}
                 onRequestClose={() => { }}
-            >
+                presentationStyle='overFullScreen'
+                statusBarTranslucent={true}>
                 <ThemedView style={styles.modalBackground}>
                     <ThemedView style={styles.activityIndicatorWrapper}>
                         <ActivityIndicator animating={loading} size="large" color={Colors.white} />

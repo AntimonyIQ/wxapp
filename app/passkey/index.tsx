@@ -24,6 +24,7 @@ import ThemedText from "@/components/ThemedText";
 import ThemedSafeArea from "@/components/ThemeSafeArea";
 import ThemedView from "@/components/ThemedView";
 import { Status } from "@/enums/enums";
+import { StatusBar } from "expo-status-bar";
 
 interface IProps { }
 
@@ -272,6 +273,7 @@ export default class PasskeyScreen extends React.Component<IProps, IState> {
 
                         </ThemedView>
                     </ThemedView>
+                    <StatusBar style="dark" />
                 </ThemedSafeArea>
                 <LoadingModal loading={loading} />
             </>
@@ -282,7 +284,7 @@ export default class PasskeyScreen extends React.Component<IProps, IState> {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        paddingTop: Platform.OS === 'android' ? 35 : 0,
+        paddingVertical: Platform.OS === 'android' ? 50 : 0,
     },
     title: {
         flexDirection: "row",

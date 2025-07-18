@@ -16,16 +16,10 @@ interface IState { }
 
 export default class TemplateScreen extends React.Component<IProps, IState> {
     private session: UserData = sessionManager.getUserData();
-    // private appreance: ColorSchemeName = Appearance.getColorScheme();
     private readonly title = "Withdraw Success Screen";
     // private withdrawal: IWithdrawal;
     constructor(props: IProps) {
         super(props);
-
-        if (!this.session || !this.session.isLoggedIn) {
-            logger.log("Session not found. Redirecting to login screen.");
-            router.dismissTo("/");
-        };
         // this.withdrawal = this.session.withdrawal;
     }
 

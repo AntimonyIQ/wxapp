@@ -37,3 +37,17 @@ yarn-error.*
 *.tsbuildinfo
 
 app-example
+
+# Expo prebuild native folders
+android/
+ios/
+
+# Build artifacts
+*.apk
+*.aab
+*.keystore
+
+
+# Logs
+*.log
+

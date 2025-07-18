@@ -40,7 +40,7 @@ export default class TransactionScreen extends React.Component<IProps, IState> {
     private readonly status: Array<string> = ["all", "success", "failed", "pending"];
     private appreance: ColorSchemeName = Appearance.getColorScheme();
     private readonly title = "Transactions";
-    private transaction: ITransaction;
+    private transaction: ITransaction = {} as ITransaction;
     constructor(props: IProps) {
         super(props);
         this.state = {
@@ -53,7 +53,6 @@ export default class TransactionScreen extends React.Component<IProps, IState> {
             logger.log("Session not found. Redirecting to login screen.");
             router.dismissTo("/");
         };
-        this.transaction = this.session.transaction;
     }
 
     componentDidMount(): void {
@@ -64,24 +63,6 @@ export default class TransactionScreen extends React.Component<IProps, IState> {
     private fetchTransactionsData = async () => {
         try {
             this.setState({ loading: true });
-            const session = sessionManager.getUserData();
-            const { accessToken } = session;
-
-            const response = await fetch(`${Defaults.API}/transactions/user/?page=1&limit=50${this.state.selectedTab !== Tabs.all ? `&status=${this.state.selectedTab}` : ''}`, {
-                method: "GET",
-                headers: { ...Defaults.HEADERS, "Authorization": `Bearer ${accessToken}` },
-            });
-
-            if (!response.ok) throw new Error("response failed with status: " + response.status);
-
-            const data = await response.json();
-
-            if (data.status === "success") {
-                this.setState({
-                    transactions: data.data || [],
-                    loading: false,
-                });
-            }
         } catch (error) {
             logger.log(error);
         } finally {

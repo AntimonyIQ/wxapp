@@ -22,7 +22,7 @@ import { Image } from "expo-image";
 import { router, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React from "react";
-import { Appearance, ColorSchemeName, Dimensions, Platform, Pressable, Share, StyleSheet, TouchableOpacity, Vibration } from "react-native";
+import { Dimensions, Platform, Pressable, Share, StyleSheet, TouchableOpacity, Vibration } from "react-native";
 import QRCode from 'react-native-qrcode-svg';
 import Toast from "react-native-toast-message";
 import Defaults from "../default/default";
@@ -35,7 +35,6 @@ interface IState {
 
 export default class ReceiveScreen extends React.Component<IProps, IState> {
     private session: UserData = sessionManager.getUserData();
-    private appreance: ColorSchemeName = Appearance.getColorScheme();
     private readonly title = "Receive Screen";
     private readonly isDesktop: boolean = Platform.OS === 'web' && Dimensions.get('window').width > 600;
     constructor(props: IProps) {
@@ -127,7 +126,7 @@ export default class ReceiveScreen extends React.Component<IProps, IState> {
                             onPress={() => router.back()}>
                             <Image
                                 source={require("../../assets/icons/chevron_right.svg")}
-                                tintColor={this.appreance === "dark" ? "#ffffff" : "#000000"}
+                                tintColor={"#000000"}
                                 style={styles.backIcon} />
                             <ThemedText style={styles.backText}>Back</ThemedText>
                         </TouchableOpacity>
@@ -194,7 +193,7 @@ export default class ReceiveScreen extends React.Component<IProps, IState> {
                         </Pressable>
                     </ThemedView>
                 </ThemedSafeArea>
-                <StatusBar style='light' />
+                <StatusBar style='dark' />
             </>
         )
     }
@@ -203,7 +202,7 @@ export default class ReceiveScreen extends React.Component<IProps, IState> {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        paddingTop: Platform.OS === 'android' ? 50 : Platform.OS === "web" ? 20 : 0,
+        paddingVertical: Platform.OS === 'android' ? 50 : Platform.OS === "web" ? 20 : 0,
     },
     header: {
         flexDirection: 'row',
@@ -214,7 +213,7 @@ const styles = StyleSheet.create({
     backButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: Appearance.getColorScheme() === "dark" ? '#070707' : '#f7f7f7',
+        backgroundColor: '#f7f7f7',
         borderRadius: 99,
         paddingVertical: 5,
         paddingRight: 20,
@@ -281,7 +280,7 @@ const styles = StyleSheet.create({
     walletAddressContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        backgroundColor: Appearance.getColorScheme() === "dark" ? '#0d0d0d' : '#F7F7F7',
+        backgroundColor: '#F7F7F7',
         paddingHorizontal: 12,
         paddingVertical: 21,
         borderRadius: 12,

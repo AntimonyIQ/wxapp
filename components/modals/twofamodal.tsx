@@ -84,7 +84,7 @@ export default class TwoFAModal extends React.Component<MessageModalProps, IStat
                 transparent={true}
                 animationType='slide'
                 presentationStyle='overFullScreen'
-            >
+                statusBarTranslucent={true}>
                 <TouchableWithoutFeedback onPress={onClose}>
                     <ThemedView style={styles.modalOverlay}>
                         <TouchableWithoutFeedback onPress={() => { }}>

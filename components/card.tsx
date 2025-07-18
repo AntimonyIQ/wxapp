@@ -53,15 +53,11 @@ class Card extends React.Component<ICard> {
                     <ThemedView style={styles.changeContainer}>
                         {item.percent_change_24h >= 0 ? (
                             <Image
-                                source={this.appreance === "dark"
-                                    ? require("../assets/icons/positive.svg")
-                                    : require("../assets/icons/positive.svg")}
+                                source={require("../assets/icons/positive.svg")}
                                 style={{ width: 15, height: 15, transform: [{ rotate: "180deg" }] }} />
                         ) : (
                             <Image
-                                source={this.appreance === "dark"
-                                    ? require("../assets/icons/negative.svg")
-                                    : require("../assets/icons/negative.svg")}
+                                source={require("../assets/icons/negative.svg")}
                                 style={{ width: 15, height: 15, transform: [{ rotate: "180deg" }] }} />
                         )}
                         <ThemedText

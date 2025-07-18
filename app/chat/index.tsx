@@ -1,6 +1,6 @@
 import React from "react";
 import sessionManager from "@/session/session";
-import { IChat, UserData, IUser } from "@/interface/interface";
+import { UserData, IUser } from "@/interface/interface";
 import logger from "@/logger/logger";
 import { router, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -10,7 +10,6 @@ import { Image } from "expo-image";
 import TextField from "@/components/inputs/text";
 import ChatBubble from "@/components/card/bubble";
 import { Colors } from "@/constants/Colors";
-import Defaults from "../default/default";
 import LoadingModal from "@/components/modals/loading";
 import ThemedText from "@/components/ThemedText";
 import ThemedView from "@/components/ThemedView";
@@ -23,7 +22,7 @@ interface IState {
     loading: boolean;
     isSending: boolean;
     isTyping: boolean;
-    chats: Array<IMessage>;
+    chats: Array<any>;
     replayId: string;
 }
 
@@ -76,20 +75,6 @@ export default class ChatScreen extends React.Component<IProps, IState> {
     private getChats = async (): Promise<void> => {
         try {
             this.setState({ loading: true });
-
-            const response = await fetch(`${Defaults.API}/support/user`, {
-                method: "GET",
-                headers: { ...Defaults.HEADERS, "Authorization": `Bearer ${this.session.accessToken}` },
-            });
-
-            if (!response.ok) throw new Error("response failed with status: " + response.status);
-
-            const data = await response.json();
-
-            if (data.status === "success") {
-                const supportChat: SupportChatDocument = data?.data?.supportChat;
-                this.setState({ chats: supportChat.messages, replayId: supportChat._id });
-            }
         } catch (error: any) {
             logger.error(error);
         } finally {
@@ -100,28 +85,6 @@ export default class ChatScreen extends React.Component<IProps, IState> {
     private sendMessage = async (): Promise<void> => {
         try {
             this.setState({ isSending: true, message: "" });
-
-            const payload: Record<string, any> = {
-                message: this.state.message,
-                sender: "user",
-                messageId: this.state.replayId,
-            };
-
-            const response = await fetch(`${Defaults.API}/support/message`, {
-                method: "POST",
-                headers: { ...Defaults.HEADERS, "Authorization": `Bearer ${this.session.accessToken}` },
-                body: JSON.stringify(payload),
-            });
-
-            if (!response.ok) throw new Error("response failed with status: " + response.status);
-
-            const data = await response.json();
-            if (data.status === "success") {
-                const newSupportChat: SupportChatDocument = data?.data.supportChatMessage;
-                const messages: Array<IMessage> = newSupportChat.messages;
-
-                this.setState({ chats: messages, replayId: newSupportChat._id });
-            }
         } catch (error: any) {
             logger.error(error.message || error);
         } finally {

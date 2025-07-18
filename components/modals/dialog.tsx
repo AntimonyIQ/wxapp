@@ -37,7 +37,8 @@ export default class DialogModal extends React.Component<LogoutDialogProps> {
                 transparent={true}
                 visible={visible}
                 animationType="slide"
-            >
+                presentationStyle='overFullScreen'
+                statusBarTranslucent={true}>
                 <TouchableWithoutFeedback onPress={onCancel}>
                     <ThemedView style={styles.modalOverlay}>
                         <TouchableWithoutFeedback onPress={() => { }}>

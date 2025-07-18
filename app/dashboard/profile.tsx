@@ -14,15 +14,15 @@ import ProfileButton from '@/components/button/profile';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
 import ThemedText from '@/components/ThemedText';
 import ThemedView from '@/components/ThemedView';
-import { IUser, UserData } from '@/interface/interface';
+import { UserData } from '@/interface/interface';
 import logger from '@/logger/logger';
-import { micah } from '@dicebear/collection';
-import { createAvatar, Result } from '@dicebear/core';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import React from 'react';
-import { Linking, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import sessionManager from '../../session/session';
+import * as WebBrowser from 'expo-web-browser';
+
 
 interface IProps { }
 
@@ -31,7 +31,7 @@ interface IState {
 
 export default class TabTwoScreen extends React.Component<IProps, IState> {
     private session: UserData = sessionManager.getUserData();
-    private avatar: Result;
+    private readonly avatar = "https://api.dicebear.com/8.x/micah/svg";
     constructor(props: IProps) {
         super(props);
         this.state = {
@@ -41,9 +41,6 @@ export default class TabTwoScreen extends React.Component<IProps, IState> {
             logger.log("Session not found. Redirecting to login screen.");
             router.dismissTo("/");
         };
-        this.avatar = createAvatar(micah, {
-            seed: this.session?.user?.fullName,
-        });
     }
 
     componentDidMount(): void {
@@ -56,7 +53,7 @@ export default class TabTwoScreen extends React.Component<IProps, IState> {
                 headerBackgroundColor={{ light: '#D0D0D0', dark: '#D0D0D0' }}
                 headerImage={
                     <Image
-                        source={this.avatar.toDataUri()}
+                        source={{ uri: `${this.avatar}?seed=${encodeURIComponent(this.session.user?.fullName || "")}` }}
                         style={styles.headerImage}
                     />
                 }>
@@ -86,11 +83,13 @@ export default class TabTwoScreen extends React.Component<IProps, IState> {
                 <ThemedView style={styles.section}>
                     <ThemedText style={{ fontFamily: 'AeonikRegular' }}>Others</ThemedText>
                     <ThemedView style={styles.servicesContainer}>
-                        <ProfileButton text={'Legal'} onPress={() => {
-                            Linking.openURL('https://wealthx.app/privacy').catch((err) => console.error('Failed to open URL:', err))
+                        <ProfileButton text={'Legal'} onPress={async () => {
+                            await WebBrowser.openBrowserAsync('https://wealthx.app/privacy');
                         }} />
                         <ProfileButton text={'Chat With Us'} onPress={() => router.navigate('/chat')} />
-                        <ProfileButton text={'Get Help'} hideBorder={true} onPress={() => Linking.openURL('https://wealthx.app/faq').catch((err) => console.error('Failed to open URL:', err))} />
+                        <ProfileButton text={'Get Help'} hideBorder={true} onPress={async () => {
+                            await WebBrowser.openBrowserAsync('https://wealthx.app/faq');
+                        }} />
                     </ThemedView>
                 </ThemedView>
             </ParallaxScrollView>

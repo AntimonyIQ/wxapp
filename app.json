@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "wealthx",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "assetBundlePatterns": [
       "**/*"
@@ -51,7 +51,7 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      "expo-background-task"
+      "expo-background-task",
     ],
     "experiments": {
       "typedRoutes": true

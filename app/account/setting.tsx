@@ -14,7 +14,7 @@ import React from "react";
 import sessionManager from "@/session/session";
 import logger from "@/logger/logger";
 import { router, Stack } from "expo-router";
-import { Linking, Platform, ScrollView, Share, StyleSheet, TouchableOpacity } from "react-native";
+import { Platform, ScrollView, Share, StyleSheet, TouchableOpacity } from "react-native";
 import { Image } from "expo-image";
 import DialogModal from "@/components/modals/dialog";
 import ProfileButton from "@/components/button/profile";
@@ -29,6 +29,7 @@ import { Status } from "@/enums/enums";
 import ProfileSwitch from "@/components/switch/profile";
 import * as LocalAuthentication from 'expo-local-authentication';
 import VerifiedButton from "@/components/button/verified";
+import * as WebBrowser from 'expo-web-browser';
 
 interface IProps { }
 
@@ -380,15 +381,17 @@ export default class AccountSettingScreen extends React.Component<IProps, IState
                                         backgroundColor: '#F7F7F7'
                                     }}
                                 >
-                                    <ProfileButton text={'Rate WealthX'} onPress={() => Linking.openURL(this.store_link).catch((err) => console.error('Error opening URL:', err))} />
+                                    <ProfileButton text={'Rate WealthX'} onPress={async () => {
+                                        await WebBrowser.openBrowserAsync(this.store_link);
+                                    }} />
                                     <ProfileButton text={'Share'} onPress={async () => {
                                         await Share.share({
                                             title: "Join WealthX and start trading your own cryptocurrency assets",
                                             message: this.store_link,
                                         });
                                     }} />
-                                    <ProfileButton text={'Help'} onPress={() => {
-                                        Linking.openURL('https://wealthx.app/faq').catch((err) => console.error('Error opening URL:', err));
+                                    <ProfileButton text={'Help'} onPress={async () => {
+                                        await WebBrowser.openBrowserAsync('https://wealthx.app/faq');
                                     }} />
                                     <ProfileButton textColor={"#FF0000"} text={'Delete Account'} hideBorder={true} onPress={() => this.setState({ deleted: true })} />
                                 </ThemedView>
@@ -454,7 +457,7 @@ export default class AccountSettingScreen extends React.Component<IProps, IState
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        paddingTop: Platform.OS === 'android' ? 50 : Platform.OS === "web" ? 20 : 0,
+        paddingVertical: Platform.OS === 'android' ? 50 : Platform.OS === "web" ? 20 : 0,
     },
     header: {
         flexDirection: 'row',

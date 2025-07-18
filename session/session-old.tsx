@@ -10,10 +10,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Storage from 'expo-storage';
+import { Platform } from 'react-native';
 import JWT from '@/cryptography/jwt';
 import { DecodedToken, UserData } from "@/interface/interface";
 import logger from '@/logger/logger';
+
+let Storage: any;
+
+// Ensure localStorage is only used in a browser environment
+const isBrowser = typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
+
+if (Platform.OS === 'web' && isBrowser) {
+    Storage = {
+        getItem: async ({ key }: { key: string }) => {
+            return Promise.resolve(localStorage.getItem(key));
+        },
+        setItem: async ({ key, value }: { key: string; value: string }) => {
+            localStorage.setItem(key, value);
+            return Promise.resolve();
+        },
+        removeItem: async ({ key }: { key: string }) => {
+            localStorage.removeItem(key);
+            return Promise.resolve();
+        }
+    };
+} else {
+    Storage = require('expo-storage').default;
+}
 
 class SessionManager {
     private isLoggedIn: boolean;
@@ -28,15 +51,19 @@ class SessionManager {
         this.secretKey = secretKey;
         this.storageKey = 'session';
         this.expiresTimer = 525600;
+
+        // Prevent session load in server-side/SSR environments
+        if (isBrowser || Platform.OS !== 'web') {
+            this.loadSession();
+        }
     }
 
-    public async loadSession(): Promise<void> {
+    private async loadSession(): Promise<void> {
         try {
             const storedToken = await Storage.getItem({ key: this.storageKey });
 
             if (!storedToken) {
-                logger.info('No session file found. Creating fresh session.');
-                await this.login({} as UserData);
+                logger.info('No session file found. Skipping session load.');
                 return;
             }
 
@@ -44,27 +71,25 @@ class SessionManager {
 
             if (decodedToken && typeof decodedToken === 'object') {
                 const { isLoggedIn, userData, exp } = decodedToken;
-                const currentTime = Math.floor(Date.now() / 1000);
-
-                if (exp && exp < currentTime) {
-                    logger.warn('Token has expired. Clearing and creating new session.');
-                    await this.logout();
-                    await this.login({} as UserData);
-                    return;
-                }
-
                 this.isLoggedIn = isLoggedIn;
                 this.userData = userData;
+
+                const currentTime = Math.floor(Date.now() / 1000);
+                if (exp && exp < currentTime) {
+                    logger.error('Token has expired. Clearing from storage.');
+                    await Storage.removeItem({ key: this.storageKey });
+                }
             } else {
-                logger.warn('Invalid token data. Creating fresh session.');
-                await this.logout();
-                await this.login({} as UserData);
+                throw new Error('Invalid token data');
             }
         } catch (error: any) {
             const message = error?.message || '';
-            logger.error('Failed to load session:', message);
-            await this.logout();
-            await this.login({} as UserData);
+            if (message.includes('ENOENT') || message.includes('No such file')) {
+                logger.info('Session file not found. Skipping load.');
+            } else {
+                logger.error('Failed to load session:', message);
+            }
+            await Storage.removeItem({ key: this.storageKey });
         }
     }
 

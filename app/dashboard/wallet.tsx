@@ -13,15 +13,13 @@
 import React from "react";
 import sessionManager from "../../session/session";
 import { IMarket, IParams, IResponse, UserData } from "@/interface/interface";
-import { ActivityIndicator, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Platform, Pressable, RefreshControl, ScrollView, StyleSheet } from "react-native";
 import logger from "@/logger/logger";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { router } from "expo-router";
 import { Image, ImageBackground } from "expo-image";
 import { Colors } from "@/constants/Colors";
-import { createAvatar, Result } from "@dicebear/core";
-import { micah } from "@dicebear/collection";
 import MarketCard from "@/components/card/market";
 import Defaults from "../default/default";
 import ThemedSafeArea from "@/components/ThemeSafeArea";
@@ -42,7 +40,7 @@ interface IState {
 
 export default class WalletScreen extends React.Component<IProps, IState> {
     private session: UserData = sessionManager.getUserData();
-    private avatar: any;
+    private readonly avatar = "https://api.dicebear.com/8.x/micah/svg";
     constructor(props: IProps) {
         super(props);
         this.state = { hideBalance: false, totalBalanceUsd: 0, totalBalances: {}, marketsLoading: false, markets: [], refreshing: false };
@@ -52,13 +50,6 @@ export default class WalletScreen extends React.Component<IProps, IState> {
             router.dismissTo(this.session.user?.passkeyEnabled === true ? "/passkey" : '/onboarding/login');
             return;
         };
-
-        this.avatar = createAvatar(micah, {
-            seed: this.session?.user?.fullName,
-            radius: 50,
-            backgroundColor: [Colors.blue, "#c0aede", Colors.blue],
-            backgroundType: ["gradientLinear"],
-        });
     }
 
     componentDidMount(): void {
@@ -155,7 +146,7 @@ export default class WalletScreen extends React.Component<IProps, IState> {
                     <ThemedSafeArea style={styles.container}>
                         <ThemedView style={styles.header}>
                             <Image
-                                source={this.avatar.toDataUri()}
+                                source={{ uri: `${this.avatar}?seed=${encodeURIComponent(this.session.user?.fullName || "")}&backgroundColor=b6e3f4,c0aede,d1d4f9&backgroundType=gradientLinear,solid` }}
                                 style={{ width: 40, height: 40 }}
                             />
                             <Pressable style={styles.walletSelector}>

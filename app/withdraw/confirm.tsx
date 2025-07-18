@@ -3,12 +3,11 @@ import sessionManager from "@/session/session";
 import { IList, UserData } from "@/interface/interface";
 import logger from "@/logger/logger";
 import { router, Stack } from "expo-router";
-import { Appearance, ColorSchemeName, Platform, StyleSheet, TouchableOpacity } from "react-native";
+import { Platform, StyleSheet, TouchableOpacity } from "react-native";
 import MessageModal from "@/components/modals/message";
 import { Image } from "expo-image";
 import PrimaryButton from "@/components/button/primary";
 import LoadingModal from "@/components/modals/loading";
-import { Colors } from "@/constants/Colors";
 import Defaults from "../default/default";
 import banks from "../data/banks.json";
 import PinModal from "@/components/modals/pin";
@@ -22,13 +21,13 @@ import {
 import ThemedView from "@/components/ThemedView";
 import ThemedText from "@/components/ThemedText";
 import ThemedSafeArea from "@/components/ThemeSafeArea";
-import { Coin } from "@/enums/enums";
+import { Coin, Status } from "@/enums/enums";
 
 interface IProps { }
 
 interface IState {
     error_modal: boolean;
-    message_type: MessageModalType;
+    message_type: Status;
     error_title: string;
     error_message: string;
     loading: boolean;
@@ -39,16 +38,15 @@ interface IState {
 
 export default class WithdrawConfirmScreen extends React.Component<IProps, IState> {
     private session: UserData = sessionManager.getUserData();
-    private appreance: ColorSchemeName = Appearance.getColorScheme();
     private readonly title = "Confirm Withdraw";
-    private withdrawal: IWithdrawal;
+    private withdrawal: any;
     private notificationListener: any;
     private responseListener: any;
     constructor(props: IProps) {
         super(props);
         this.state = {
             error_modal: false,
-            message_type: MessageModalType.ERROR,
+            message_type: Status.ERROR,
             error_message: "",
             error_title: "",
             loading: false,
@@ -56,11 +54,6 @@ export default class WithdrawConfirmScreen extends React.Component<IProps, IStat
             pin: "",
             expoPushToken: "",
         };
-        if (!this.session || !this.session.isLoggedIn) {
-            logger.log("Session not found. Redirecting to login screen.");
-            router.dismissTo("/");
-        };
-        this.withdrawal = this.session.withdrawal;
     }
 
     componentDidMount(): void {
@@ -81,47 +74,12 @@ export default class WithdrawConfirmScreen extends React.Component<IProps, IStat
     };
 
 
-    private localbanks = (code: string): ILocalBankData => {
-        const bank = banks.find((bank) => bank.code === code);
-        if (!bank) throw new Error(`Bank with code ${code} not found.`);
-        return bank as ILocalBankData;
-    }
+    private localbanks = (code: string) => { }
 
     private handleFundWithdrawal = async () => {
-        const { pin } = this.state;
 
         try {
             this.setState({ loading: true });
-
-            const payload = JSON.stringify({
-                pin: pin,
-                amount: this.withdrawal.amount,
-                bank_code: this.withdrawal.bank?.bankCode,
-                bank_account_number: this.withdrawal.bank?.accountNumber,
-                bank_name: this.withdrawal.bank?.bankName,
-                account_name: this.withdrawal.bank?.accountName,
-            });
-
-            const response = await fetch(`${Defaults.API}/naira-wallet/withdrwal`, {
-                method: "POST",
-                headers: { ...Defaults.HEADERS, "Authorization": `Bearer ${this.session.accessToken}` },
-                body: payload,
-            });
-
-            const data = await response.json();
-
-            if (data.status === "success") {
-                await scheduleNotification(
-                    "Withdrawal Requested",
-                    `Hey, A withdrawal of ${this.withdrawal.amount.toLocaleString()} ${Coin.NGN} was requested on your account. Contact support if this was not initiated by you.`,
-                    { type: "success" },
-                    2
-                );
-
-                router.navigate('/withdraw/success');
-            } else {
-                this.setState({ error_modal: true, error_title: "Withdrawal Error", error_message: data.message || "An error occurred while processing withdrawal request" });
-            }
 
         } catch (error) {
             console.log("Error: ", error);
@@ -160,7 +118,7 @@ export default class WithdrawConfirmScreen extends React.Component<IProps, IStat
                             <Image
                                 source={require("../../assets/icons/chevron-left.svg")}
                                 style={styles.backIcon}
-                                tintColor={this.appreance === "dark" ? Colors.light.background : "#000000"} />
+                                tintColor={"#000000"} />
                             <ThemedText style={styles.backText}>Back</ThemedText>
                         </TouchableOpacity>
                         <ThemedText style={styles.title}>{this.title}</ThemedText>
@@ -205,7 +163,7 @@ export default class WithdrawConfirmScreen extends React.Component<IProps, IStat
                             style={{
                                 padding: 12,
                                 borderRadius: 12,
-                                backgroundColor: this.appreance === "dark" ? '#000000' : '#F7F7F7',
+                                backgroundColor: '#F7F7F7',
                                 marginHorizontal: 16,
                                 gap: 8,
                                 marginBottom: 12,
@@ -227,7 +185,7 @@ export default class WithdrawConfirmScreen extends React.Component<IProps, IStat
                             style={{
                                 padding: 12,
                                 borderRadius: 12,
-                                backgroundColor: this.appreance === "dark" ? '#000000' : '#F7F7F7',
+                                backgroundColor: '#F7F7F7',
                                 marginHorizontal: 16,
                                 gap: 8,
                             }}
@@ -246,7 +204,7 @@ export default class WithdrawConfirmScreen extends React.Component<IProps, IStat
                             <ThemedView style={{ backgroundColor: "transparent", flexDirection: "row", alignItems: "center", gap: 15, paddingTop: 10, }}>
                                 <Image
                                     style={{ width: 30, height: 30, borderRadius: 99, }}
-                                    source={{ uri: `https://cdn.jsdelivr.net/gh/supermx1/nigerian-banks-api@main/logos/${this.localbanks(this.withdrawal.bank?.bankCode || "").slug}.png` }} />
+                                    source={{ uri: `https://cdn.jsdelivr.net/gh/supermx1/nigerian-banks-api@main/logos/${this.localbanks(this.withdrawal.bank?.bankCode || "")}.png` }} />
                                 <ThemedText>******{(this.withdrawal.bank?.accountNumber || "").slice(-4)} {this.withdrawal.bank?.bankName}</ThemedText>
                             </ThemedView>
                         </ThemedView>
@@ -264,7 +222,7 @@ export default class WithdrawConfirmScreen extends React.Component<IProps, IStat
                             <Image
                                 source={require("../../assets/icons/check.svg")}
                                 style={styles.backIcon}
-                                tintColor={this.appreance === "dark" ? Colors.light.background : "#000000"} />
+                                tintColor={"#000000"} />
                             <ThemedText
                                 style={{
                                     fontFamily: 'AeonikRegular',
@@ -289,9 +247,9 @@ export default class WithdrawConfirmScreen extends React.Component<IProps, IStat
 
                     <MessageModal
                         visible={error_modal}
-                        type={message_type || MessageModalType.ERROR}
+                        type={message_type || Status.ERROR}
                         onClose={(): void => this.setState({ error_modal: !error_modal }, async () => {
-                            if (message_type === MessageModalType.SUCCESS) {
+                            if (message_type === Status.SUCCESS) {
                                 router.dismissTo("/dashboard");
                             }
                         })}
@@ -325,7 +283,7 @@ const styles = StyleSheet.create({
     backButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: Appearance.getColorScheme() === "dark" ? "#000000" : '#f7f7f7',
+        backgroundColor: '#f7f7f7',
         borderRadius: 99,
         paddingVertical: 5,
         paddingRight: 20,
@@ -350,13 +308,13 @@ const styles = StyleSheet.create({
     inputContainer: {
         padding: 12,
         borderRadius: 12,
-        backgroundColor: Appearance.getColorScheme() === "dark" ? "#000000" : '#F7F7F7',
+        backgroundColor: '#F7F7F7',
     },
     inputRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         marginBottom: 16,
-        backgroundColor: Appearance.getColorScheme() === "dark" ? "#000000" : '#FFF',
+        backgroundColor: '#FFF',
     },
     inputLabel: {
         fontSize: 12,
@@ -380,7 +338,7 @@ const styles = StyleSheet.create({
     amountInput: {
         fontSize: 40,
         fontFamily: 'AeonikMedium',
-        color: Appearance.getColorScheme() === "dark" ? "#ffffff" : '#000000',
+        color: '#000000',
     },
     optionsContainer: {
         marginTop: 14,

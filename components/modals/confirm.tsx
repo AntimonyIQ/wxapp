@@ -59,7 +59,7 @@ export default class ConfirmModal extends React.Component<IConfirm> {
                     transparent={true}
                     animationType='slide'
                     presentationStyle='overFullScreen'
-                >
+                    statusBarTranslucent={true}>
                     <TouchableWithoutFeedback onPress={onClose}>
                         <ThemedView style={styles.modalOverlay}>
                             <TouchableWithoutFeedback onPress={(): void => { }}>

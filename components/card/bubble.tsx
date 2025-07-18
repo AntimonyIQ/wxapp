@@ -1,8 +1,8 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
-import { ThemedText } from "../ThemedText";
 import { Image } from "expo-image";
 import { Colors } from "@/constants/Colors";
+import ThemedText from "../ThemedText";
 
 interface ChatBubbleProps {
     text: string;

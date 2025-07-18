@@ -4,7 +4,7 @@ import { IMarket, ITransaction, UserData } from "@/interface/interface";
 import logger from "@/logger/logger";
 import { router, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { Appearance, ColorSchemeName, Linking, Platform, Pressable, ScrollView, StyleSheet } from "react-native";
+import { Appearance, ColorSchemeName, Platform, Pressable, ScrollView, StyleSheet } from "react-native";
 import { TouchableOpacity } from "react-native";
 import { Image } from "react-native";
 import Defaults from "../default/default";
@@ -12,11 +12,13 @@ import { Coin, TransactionType } from "@/enums/enums";
 import ThemedSafeArea from "@/components/ThemeSafeArea";
 import ThemedView from "@/components/ThemedView";
 import ThemedText from "@/components/ThemedText";
+import * as WebBrowser from 'expo-web-browser';
 
 interface IProps { }
 
 interface IState {
     rate: number;
+    transaction: ITransaction;
 }
 
 export default class TransactionDetailsScreen extends React.Component<IProps, IState> {
@@ -24,22 +26,21 @@ export default class TransactionDetailsScreen extends React.Component<IProps, IS
     private appreance: ColorSchemeName = Appearance.getColorScheme();
     private readonly title = "Transaction Details";
     private readonly transactiontypesupport: Array<string> = ["p2p", "normal", "buy", "sell", "transfer", "deposit", "sweep", "send", "withdrawal"];
-    private transaction: ITransaction;
     private markets: IMarket[];
     constructor(props: IProps) {
         super(props);
-        this.state = { rate: 0 };
+        this.state = { rate: 0, transaction: {} as ITransaction };
         if (!this.session || !this.session.isLoggedIn) {
             logger.log("Session not found. Redirecting to login screen.");
             router.dismissTo("/");
         };
-        this.transaction = this.session.transaction;
         this.markets = this.session.markets || [];
     }
 
     componentDidMount(): void { }
 
-    private openLink = () => {
+    private openLink = async () => {
+        const { transaction } = this.state;
         const explorerUrls: Partial<Record<Coin, string>> = {
             [Coin.BTC]: "https://www.blockchain.com/btc/tx/",
             [Coin.ETH]: "https://etherscan.io/tx/",
@@ -47,8 +48,8 @@ export default class TransactionDetailsScreen extends React.Component<IProps, IS
             [Coin.USDT]: "https://bscscan.com/tx/",
         };
 
-        const currency: Coin | undefined = this.transaction.fromCurrency as Coin;
-        const transactionHash = this.transaction.hash;
+        const currency: Coin | undefined = transaction.fromCurrency as Coin;
+        const transactionHash = transaction.hash;
 
         if (!currency || !transactionHash) {
             logger.error("Invalid transaction data:", { currency, transactionHash });
@@ -64,13 +65,11 @@ export default class TransactionDetailsScreen extends React.Component<IProps, IS
 
         const url = `${baseUrl}${transactionHash}`;
 
-        Linking.openURL(url).catch((err) =>
-            logger.error("Failed to open URL:", err)
-        );
+        await WebBrowser.openBrowserAsync(url);
     };
 
     render(): React.ReactNode {
-        const { rate } = this.state;
+        const { rate, transaction } = this.state;
         return (
             <>
                 <Stack.Screen options={{ title: this.title, headerShown: false }} />
@@ -96,27 +95,27 @@ export default class TransactionDetailsScreen extends React.Component<IProps, IS
                         showsVerticalScrollIndicator={false}>
                         <ThemedView style={styles.infoContainer}>
                             <ThemedView style={styles.balanceContainer}>
-                                <ThemedText style={styles.balanceText}>{this.transaction.type === TransactionType.TRANSFER ? "-" : "+"}{this.transaction.amount} {this.transaction.fromCurrency}</ThemedText>
+                                <ThemedText style={styles.balanceText}>{transaction.type === TransactionType.TRANSFER ? "-" : "+"}{transaction.amount} {transaction.fromCurrency}</ThemedText>
                                 <ThemedText style={styles.balanceValue}>
-                                    ≈ {(this.transaction.amount * rate).toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 })}
+                                    ≈ {(transaction.amount * rate).toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 })}
                                 </ThemedText>
                             </ThemedView>
 
                             <ThemedView style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 15, width: '100%', backgroundColor: '#000', padding: 16, borderRadius: 12 }}>
                                 <ThemedView style={{ backgroundColor: 'transparent', flexDirection: 'row', justifyContent: 'space-between', width: '100%' }}>
                                     <ThemedText style={styles.infoLabel}>Date</ThemedText>
-                                    <ThemedText style={styles.infoLabelText}>{Defaults.FORMAT_DATE(this.transaction.createdAt.toString())}</ThemedText>
+                                    <ThemedText style={styles.infoLabelText}>{Defaults.FORMAT_DATE(transaction.createdAt.toString())}</ThemedText>
                                 </ThemedView>
                                 <ThemedView style={{ backgroundColor: 'transparent', flexDirection: 'row', justifyContent: 'space-between', width: '100%' }}>
                                     <ThemedText style={styles.infoLabel}>Status</ThemedText>
-                                    <ThemedText style={styles.infoLabelText}>{this.transaction.status}</ThemedText>
+                                    <ThemedText style={styles.infoLabelText}>{transaction.status}</ThemedText>
                                 </ThemedView>
                                 <ThemedView style={{ backgroundColor: 'transparent', flexDirection: 'row', justifyContent: 'space-between', width: '100%' }}>
                                     <ThemedText style={styles.infoLabel}>Recipient</ThemedText>
                                     <ThemedText style={styles.infoLabelText}>
-                                        {this.transaction.to.startsWith('0x')
-                                            ? `${this.transaction.to.slice(0, 10)}...${this.transaction.to.slice(-10)}`
-                                            : this.transaction.to}
+                                        {transaction.to.startsWith('0x')
+                                            ? `${transaction.to.slice(0, 10)}...${transaction.to.slice(-10)}`
+                                            : transaction.to}
                                     </ThemedText>
                                 </ThemedView>
                             </ThemedView>
@@ -124,15 +123,15 @@ export default class TransactionDetailsScreen extends React.Component<IProps, IS
                             <ThemedView style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 15, width: '100%', backgroundColor: '#000', padding: 16, borderRadius: 12 }}>
                                 <ThemedView style={{ backgroundColor: 'transparent', flexDirection: 'row', justifyContent: 'space-between', width: '100%' }}>
                                     <ThemedText style={styles.infoLabel}>Type</ThemedText>
-                                    <ThemedText style={styles.infoLabelText}>{this.transaction.type}</ThemedText>
+                                    <ThemedText style={styles.infoLabelText}>{transaction.type}</ThemedText>
                                 </ThemedView>
                                 <ThemedView style={{ backgroundColor: 'transparent', flexDirection: 'row', justifyContent: 'space-between', width: '100%' }}>
                                     <ThemedText style={styles.infoLabel}>Fees</ThemedText>
-                                    <ThemedText style={styles.infoLabelText}>{this.transaction.fees} {this.transaction.fromCurrency}</ThemedText>
+                                    <ThemedText style={styles.infoLabelText}>{transaction.fees} {transaction.fromCurrency}</ThemedText>
                                 </ThemedView>
                             </ThemedView>
 
-                            {this.transactiontypesupport.includes(this.transaction.type.toLowerCase()) &&
+                            {transaction.type.includes(transaction.type.toLowerCase()) &&
                                 <Pressable onPress={this.openLink} style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 15, width: '100%', backgroundColor: '#000', padding: 16, borderRadius: 12 }}>
                                     <ThemedView style={{ backgroundColor: 'transparent', flexDirection: 'row', justifyContent: 'space-between', width: '100%' }}>
                                         <ThemedText style={styles.infoLabel}>More Details</ThemedText>

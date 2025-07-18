@@ -345,7 +345,7 @@ export default class SwapScreen extends React.Component<SwapProps, SwapState> {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        paddingTop: Platform.OS === 'android' ? 50 : Platform.OS === "web" ? 20 : 0,
+        paddingVertical: Platform.OS === 'android' ? 50 : Platform.OS === "web" ? 20 : 0,
     },
     header: {
         flexDirection: 'row',

@@ -11,7 +11,6 @@
 // limitations under the License.
 
 
-import mongoose from "mongoose";
 import {
     AccountTier,
     BiometricType,
@@ -119,7 +118,7 @@ export interface IUser {
     firstDepositConfirmed: boolean;
     deleted: boolean;
     deletedAt: Date;
-    deletedBy: mongoose.Types.ObjectId;
+    deletedBy: string;
     comparePassword(password: string): Promise<boolean>;
     comparePin(pin: string): Promise<boolean>;
     comparePasskey(passkey: string): Promise<boolean>;
@@ -147,13 +146,13 @@ export interface ILogin extends IAuth {
     code: string;
 }
 
-export interface IWallet extends mongoose.Document {
+export interface IWallet {
     address: string;
     privateKey: string;
     publicKey: string;
     currency: Coin;
     network: BlockchainNetwork;
-    userId: mongoose.Types.ObjectId;
+    userId: string;
     balance: number;
     type: WalletType;
     createdAt: Date;
@@ -177,12 +176,12 @@ export interface IProvider extends IWallet {
     tier4: number;
 }
 
-export interface IAction extends mongoose.Document {
-    userId: mongoose.Types.ObjectId;
+export interface IAction {
+    userId: string;
     which: WhichAction;
     reason: string;
     resolved: boolean;
-    resolvedBy: mongoose.Types.ObjectId;
+    resolvedBy: string;
     resolvedAt: Date;
     createdAt: Date;
     updatedAt: Date;
@@ -194,12 +193,12 @@ export interface IKeys {
     publicKey: string;
 }
 
-export interface ITransaction extends mongoose.Document {
+export interface ITransaction {
     from: string;
     to: string;
     fromCurrency: Coin;
     toCurrency: Coin;
-    userId: mongoose.Types.ObjectId;
+    userId: string;
     amount: number;
     status: TransactionStatus;
     hash: string;
@@ -215,26 +214,26 @@ export interface ITransaction extends mongoose.Document {
     updatedAt: Date;
 }
 
-export interface IOrder extends mongoose.Document {
-    userId: mongoose.Types.ObjectId;
-    providerId: mongoose.Types.ObjectId;
+export interface IOrder {
+    userId: string;
+    providerId: string;
     to: string;
-    walletId: mongoose.Types.ObjectId;
+    walletId: string;
     amount: number;
     currency: Coin | Fiat;
     reference: string;
     status: TransactionStatus;
 }
 
-export interface IChat extends mongoose.Document {
-    sender: mongoose.Types.ObjectId;
-    receiver: mongoose.Types.ObjectId;
+export interface IChat {
+    sender: string;
+    receiver: string;
     message: string;
     reactions: Array<string>;
 }
 
-export interface INotification extends mongoose.Document {
-    userId: mongoose.Types.ObjectId;
+export interface INotification {
+    userId: string;
     title: string;
     body: string;
     type: NotificationType;
@@ -247,8 +246,8 @@ export interface INotification extends mongoose.Document {
     updatedAt: Date;
 }
 
-export interface IBank extends mongoose.Document {
-    userId: mongoose.Types.ObjectId;
+export interface IBank {
+    userId: string;
     accountNumber: string;
     bankName: string;
     accountName: string;
@@ -316,7 +315,7 @@ export interface ICoinBalances {
     usdt_tron: string;
 }
 
-export interface IBlockchain extends mongoose.Document {
+export interface IBlockchain {
     currency: Coin;
     hash: string;
     from: string;

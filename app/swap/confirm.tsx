@@ -5,7 +5,6 @@ import logger from "@/logger/logger";
 import { router, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { Platform, StyleSheet, TouchableOpacity } from "react-native";
-import { Colors } from "@/constants/Colors";
 import { Image } from "expo-image";
 import Defaults from "../default/default";
 import MessageModal from "@/components/modals/message";
@@ -22,6 +21,7 @@ import PrimaryButton from "@/components/button/primary";
 import ThemedView from "@/components/ThemedView";
 import ThemedText from "@/components/ThemedText";
 import ThemedSafeArea from "@/components/ThemeSafeArea";
+import { Status } from "@/enums/enums";
 
 interface IProps { }
 
@@ -63,7 +63,7 @@ enum Direction {
 export default class SwapConfirmScreen extends React.Component<IProps, IState> {
     private session: UserData = sessionManager.getUserData();
     private readonly title = "Swap Confirm Screen";
-    private swap: ISwapPayload;
+    private swap: any;
     private notificationListener: any;
     private responseListener: any;
     constructor(props: IProps) {
@@ -93,7 +93,6 @@ export default class SwapConfirmScreen extends React.Component<IProps, IState> {
             logger.log("Session not found. Redirecting to login screen.");
             router.dismissTo("/");
         };
-        this.swap = this.session.swapPayload;
     }
 
     componentDidMount(): void {
@@ -132,7 +131,7 @@ export default class SwapConfirmScreen extends React.Component<IProps, IState> {
 
             const response = await fetch(`${Defaults.API}/blockchain/swap-coin`, {
                 method: 'POST',
-                headers: { ...Defaults.HEADERS, "Authorization": `Bearer ${this.session.accessToken}` },
+                headers: { ...Defaults.HEADERS, "Authorization": `Bearer ` },
                 body: payload,
             });
 
@@ -317,7 +316,7 @@ export default class SwapConfirmScreen extends React.Component<IProps, IState> {
                         })} />}
                     {error_modal && <MessageModal
                         visible={error_modal}
-                        type={MessageModalType.ERROR}
+                        type={Status.ERROR}
                         onClose={(): void => this.setState({ error_modal: !error_modal })}
                         message={{ title: error_title, description: error_message }} />}
                     {loading && <LoadingModal loading={loading} />}
@@ -332,7 +331,7 @@ export default class SwapConfirmScreen extends React.Component<IProps, IState> {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        paddingTop: Platform.OS === 'android' ? 50 : Platform.OS === "web" ? 20 : 0,
+        paddingVertical: Platform.OS === 'android' ? 50 : Platform.OS === "web" ? 20 : 0,
     },
     header: {
         flexDirection: 'row',

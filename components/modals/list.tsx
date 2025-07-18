@@ -65,7 +65,12 @@ export default class ListModal extends React.Component<ListProps, ListState> {
             .slice(0, displayedItems);
 
         return (
-            <Modal transparent={true} visible={visible} animationType="slide">
+            <Modal
+                visible={visible}
+                transparent={true}
+                animationType="slide"
+                presentationStyle='overFullScreen'
+                statusBarTranslucent={true}>
                 <TouchableWithoutFeedback onPress={onClose}>
                     <ThemedView style={styles.modalContainer}>
                         <TouchableWithoutFeedback onPress={() => { }}>

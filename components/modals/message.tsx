@@ -45,7 +45,7 @@ export default class MessageModal extends React.Component<MessageModalProps, {}>
                 transparent={true}
                 animationType='slide'
                 presentationStyle='overFullScreen'
-            >
+                statusBarTranslucent={true}>
                 <TouchableWithoutFeedback onPress={onClose}>
                     <ThemedView style={styles.modalOverlay}>
                         <TouchableWithoutFeedback onPress={() => { }}>

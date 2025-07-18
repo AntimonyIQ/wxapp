@@ -131,7 +131,8 @@ export default class PinModal extends React.Component<PinProps, PinState> {
                 transparent={true}
                 visible={visible}
                 animationType="slide"
-            >
+                presentationStyle='overFullScreen'
+                statusBarTranslucent={true}>
                 <TouchableWithoutFeedback onPress={onClose}>
                     <ThemedView style={styles.modalContainer}>
                         <TouchableWithoutFeedback onPress={() => { }}>

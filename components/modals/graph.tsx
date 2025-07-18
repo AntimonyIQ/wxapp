@@ -5,7 +5,7 @@ import logger from '@/logger/logger';
 import { Image } from 'expo-image';
 import React from 'react';
 import { ActivityIndicator, Dimensions, Modal, Pressable, StyleSheet, TouchableWithoutFeedback } from 'react-native';
-import { LineChart } from 'react-native-chart-kit';
+// import { LineChart } from 'react-native-chart-kit';
 import ThemedText from '../ThemedText';
 import ThemedView from '../ThemedView';
 
@@ -85,7 +85,12 @@ export default class GraphModal extends React.Component<GraphDialogProps, GraphD
         const screenWidth = Dimensions.get("window").width;
 
         return (
-            <Modal transparent={true} visible={visible} animationType="slide">
+            <Modal
+                transparent={true}
+                visible={visible}
+                animationType="slide"
+                presentationStyle='overFullScreen'
+                statusBarTranslucent={true}>
                 <TouchableWithoutFeedback onPress={onClose}>
                     <ThemedView style={styles.modalOverlay}>
                         <TouchableWithoutFeedback onPress={() => { }}>
@@ -103,6 +108,7 @@ export default class GraphModal extends React.Component<GraphDialogProps, GraphD
 
                                 <ThemedView>
                                     {loading && <ActivityIndicator size={20} color={Colors.blue} />}
+                                    {/*
                                     {!loading && (
                                         <LineChart
                                             data={{
@@ -126,6 +132,7 @@ export default class GraphModal extends React.Component<GraphDialogProps, GraphD
                                             style={{ marginVertical: 8, borderRadius: 10, backgroundColor: "transparent", }}
                                         />
                                     )}
+                                    */}
                                 </ThemedView>
 
                             </ThemedView>

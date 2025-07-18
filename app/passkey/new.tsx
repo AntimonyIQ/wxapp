@@ -23,6 +23,7 @@ import { router, Stack } from "expo-router";
 import React from "react";
 import { FlatList, Platform, StyleSheet, TextInput, TouchableOpacity } from "react-native";
 import Defaults from "../default/default";
+import { StatusBar } from "expo-status-bar";
 
 interface IProps { }
 
@@ -195,6 +196,7 @@ export default class CreateNewPasskeyScreen extends React.Component<IProps, ISta
 
                         </ThemedView>
                     </ThemedView>
+                    <StatusBar style="dark" />
                 </ThemedSafeArea>
                 <LoadingModal loading={loading} />
             </>
@@ -205,7 +207,7 @@ export default class CreateNewPasskeyScreen extends React.Component<IProps, ISta
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        paddingTop: Platform.OS === 'android' ? 35 : 0,
+        paddingVertical: Platform.OS === 'android' ? 50 : 0,
     },
     title: {
         flexDirection: "row",

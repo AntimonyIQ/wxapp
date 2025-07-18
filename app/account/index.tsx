@@ -18,8 +18,6 @@ import { Appearance, ColorSchemeName, Platform, StyleSheet, TouchableOpacity } f
 import { IList, UserData, IUser } from "@/interface/interface";
 import { Colors } from "@/constants/Colors";
 import { Image } from "expo-image";
-import { createAvatar, Result } from "@dicebear/core";
-import { micah } from "@dicebear/collection";
 import ThemedView from "@/components/ThemedView";
 import ThemedText from "@/components/ThemedText";
 import ThemedSafeArea from "@/components/ThemeSafeArea";
@@ -34,7 +32,7 @@ export default class AccountScreen extends React.Component<IProps, IState> {
     private appreance: ColorSchemeName = Appearance.getColorScheme();
     private readonly title = "Account Screen";
     private user: IUser;
-    private avatar: Result;
+    private readonly avatar = "https://api.dicebear.com/8.x/micah/svg";
     constructor(props: IProps) {
         super(props);
         if (!this.session || !this.session.isLoggedIn) {
@@ -42,12 +40,6 @@ export default class AccountScreen extends React.Component<IProps, IState> {
             router.dismissTo("/");
         };
         this.user = this.session.user as IUser;
-
-        this.avatar = createAvatar(micah, {
-            seed: this.session?.user?.fullName,
-            backgroundColor: ["b6e3f4", "c0aede", "d1d4f9"],
-            backgroundType: ["gradientLinear", "solid"]
-        });
     }
 
     private DescriptionView = (list: Partial<IList>): React.JSX.Element => {
@@ -94,7 +86,7 @@ export default class AccountScreen extends React.Component<IProps, IState> {
                         <ThemedView style={styles.profileContainer}>
                             <Image
                                 style={{ borderWidth: 1, borderColor: "#757575", borderRadius: 360, width: 90, height: 90 }}
-                                source={this.avatar.toDataUri()} />
+                                source={{ uri: `${this.avatar}?seed=${encodeURIComponent(this.session.user?.fullName || "")}&backgroundColor=b6e3f4,c0aede,d1d4f9&backgroundType=gradientLinear,solid` }} />
                             <ThemedView style={styles.userInfo}>
                                 <ThemedText style={styles.userName}>{this.user.fullName}</ThemedText>
                                 <ThemedText style={styles.userUsername}>@{this.user.username}</ThemedText>

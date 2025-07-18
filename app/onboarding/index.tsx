@@ -18,6 +18,7 @@ import { Image } from "expo-image";
 import ThemedView from "@/components/ThemedView";
 import ThemedText from "@/components/ThemedText";
 import { Colors } from "@/constants/Colors";
+import { StatusBar } from "expo-status-bar";
 
 interface IProps { }
 
@@ -175,6 +176,7 @@ export default class OnboardingScreen extends React.Component<IProps, IState> {
                             <PrimaryButton title={'Login'} onPress={() => router.navigate('/onboarding/login')} />
                         </ThemedView>
                     </ThemedView>
+                    <StatusBar style="dark" />
                 </SafeAreaView>
             </>
         )
@@ -184,7 +186,7 @@ export default class OnboardingScreen extends React.Component<IProps, IState> {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        paddingTop: Platform.OS === 'android' ? 50 : Platform.OS === "web" ? 20 : 0,
+        paddingVertical: Platform.OS === 'android' ? 50 : Platform.OS === "web" ? 20 : 0,
         backgroundColor: "#FFF"
     },
     container: {

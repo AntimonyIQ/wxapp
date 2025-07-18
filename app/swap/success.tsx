@@ -5,6 +5,7 @@ import { Image } from 'expo-image';
 import ThemedSafeArea from '@/components/ThemeSafeArea';
 import ThemedView from '@/components/ThemedView';
 import ThemedText from '@/components/ThemedText';
+import { StatusBar } from 'expo-status-bar';
 
 export default class SwapDoneScreen extends React.Component<{}, {}> {
 
@@ -47,6 +48,7 @@ export default class SwapDoneScreen extends React.Component<{}, {}> {
                         }}>
                         <PrimaryButton onPress={() => router.dismissTo("/dashboard")} Gradient title={'View Account'} />
                     </ThemedView>
+                    <StatusBar style={"dark"} />
                 </ThemedSafeArea>
             </>
         );

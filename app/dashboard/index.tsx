@@ -24,8 +24,6 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Colors } from "@/constants/Colors";
 import Carousel from 'react-native-reanimated-carousel';
 import Card from "@/components/card";
-import { createAvatar } from "@dicebear/core";
-import { micah } from "@dicebear/collection";
 import ListModal from "@/components/modals/list";
 import { Coin, Status, TransactionStatus, TransactionType } from "@/enums/enums";
 import ThemedView from "@/components/ThemedView";
@@ -62,8 +60,7 @@ interface IState {
 const { width } = Dimensions.get("window");
 export default class DashboardScreen extends React.Component<IProps, IState> {
     private session: UserData = sessionManager.getUserData();
-    private avatar: any;
-
+    private readonly avatar = "https://api.dicebear.com/8.x/micah/svg";
     constructor(props: IProps) {
         super(props);
         this.state = {
@@ -91,10 +88,6 @@ export default class DashboardScreen extends React.Component<IProps, IState> {
             router.dismissTo(this.session.user?.passkeyEnabled === true ? "/passkey" : '/onboarding/login');
             return;
         };
-
-        this.avatar = createAvatar(micah, {
-            seed: this.session?.user?.fullName || "",
-        });
     }
 
     async componentDidMount(): Promise<void> {
@@ -309,8 +302,7 @@ export default class DashboardScreen extends React.Component<IProps, IState> {
                     <ThemedView style={[styles.header, { backgroundColor: "#292662" }]}>
                         <Image
                             style={{ width: 30, height: 30, borderWidth: 1, borderColor: "#757575", backgroundColor: "#EEEEEE", borderRadius: 360 }}
-                            source={this.avatar.toDataUri()}
-                        />
+                            source={{ uri: `${this.avatar}?seed=${encodeURIComponent(this.session.user?.fullName || "")}&backgroundColor=b6e3f4,c0aede,d1d4f9&backgroundType=gradientLinear,solid` }} />
                         <Pressable onPress={() => this.setState({ currency_modal: true })} style={styles.currencySelector}>
                             {/*{fiat === Coin.NGN
                                 ? <Image source={{ uri: "https://img.icons8.com/emoji/96/nigeria-emoji.png" }} style={styles.ngSmallIcon} />

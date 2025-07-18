@@ -12,13 +12,13 @@
 
 import 'react-native-reanimated';
 import * as Font from 'expo-font';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import Toast from 'react-native-toast-message';
-import { Appearance, Platform, Dimensions, View, Text } from 'react-native';
+import { Platform, Dimensions, View, Text } from 'react-native';
 import * as BackgroundFetch from 'expo-background-fetch';
 import * as TaskManager from 'expo-task-manager';
 import { addNotificationReceivedListener, addNotificationResponseReceivedListener, registerForPushNotificationsAsync, scheduleNotification } from '@/notifications/notification';
@@ -106,6 +106,7 @@ export default class RootLayout extends React.Component<{}, RootLayoutState> {
 
     public async componentDidMount() {
         try {
+            await sessionManager.loadSession();
             await SplashScreen.preventAutoHideAsync();
 
             await this.loadFonts();
@@ -178,7 +179,7 @@ export default class RootLayout extends React.Component<{}, RootLayoutState> {
         }
 
         return (
-            <ThemeProvider value={Appearance.getColorScheme() === 'dark' ? DarkTheme : DefaultTheme}>
+            <ThemeProvider value={DefaultTheme}>
                 {isDesktop ?
                     <View>
                         <Text>Not supported</Text>

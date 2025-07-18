@@ -78,7 +78,8 @@ export default class DateOfBirthDialogModal extends React.Component<DOBProps, DO
                 transparent={true}
                 visible={visible}
                 animationType="slide"
-            >
+                presentationStyle='overFullScreen'
+                statusBarTranslucent={true}>
                 <TouchableWithoutFeedback onPress={onCancel}>
                     <ThemedView style={styles.modalOverlay}>
                         <TouchableWithoutFeedback onPress={() => { }}>

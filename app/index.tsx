@@ -93,7 +93,6 @@ export default class SplashScreen extends React.Component<IProps, IState> {
             router.replace("/onboarding");
         } catch (error) {
             console.error("Splash navigation error:", error);
-            // Optionally fallback to login
             router.replace("/onboarding/login");
         }
     }
