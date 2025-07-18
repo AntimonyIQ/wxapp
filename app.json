@@ -58,14 +58,14 @@
     },
     "extra": {
       "eas": {
-        "projectId": "8a2d478e-07ff-4249-bfb0-bd28bde0fcc3"
+        "projectId": "64e78ea2-ceda-4ab0-b1ae-31f78ecbfe5e"
       }
     },
-    "owner": "antimonyiq",
+    "owner": "wealthx",
     "runtimeVersion": "1.0.0",
     "updates": {
       "enabled": false,
-      "url": "https://u.expo.dev/8a2d478e-07ff-4249-bfb0-bd28bde0fcc3"
+      "url": "https://u.expo.dev/64e78ea2-ceda-4ab0-b1ae-31f78ecbfe5e"
     }
   }
 }
