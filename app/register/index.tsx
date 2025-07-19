@@ -51,7 +51,6 @@ interface IState {
 
 export default class RegisterScreen extends React.Component<IProps, IState> {
     private session: UserData = sessionManager.getUserData();
-    private registration: IRegistration;
     private readonly title = "Add Details";
     constructor(props: IProps) {
         super(props);
@@ -71,7 +70,6 @@ export default class RegisterScreen extends React.Component<IProps, IState> {
             phones: [],
         }
 
-        this.registration = this.session.registration;
     }
 
     componentDidMount(): void {
@@ -102,7 +100,7 @@ export default class RegisterScreen extends React.Component<IProps, IState> {
             this.setState({ loading: true });
 
             const registration: IRegistration = {
-                ...this.registration,
+                ...this.session.registration,
                 country,
                 referralCode,
                 dateOfBirth,
@@ -141,7 +139,7 @@ export default class RegisterScreen extends React.Component<IProps, IState> {
                                 placeholder={'Full Name'}
                                 title={'Full Name'}
                                 showText={false}
-                                textValue={this.registration.fullName || ""}
+                                textValue={this.session.registration?.fullName || ""}
                                 onChangeText={(text) => { }}
                                 readonly={true}
                             />
@@ -150,7 +148,7 @@ export default class RegisterScreen extends React.Component<IProps, IState> {
                                 placeholder={'Email Address'}
                                 title={'Email Address'}
                                 showText={false}
-                                textValue={this.registration.email || ""}
+                                textValue={this.session.registration?.email || ""}
                                 onChangeText={(text) => { }}
                                 readonly={true}
                             />

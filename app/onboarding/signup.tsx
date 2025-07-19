@@ -97,9 +97,6 @@ export default class SignupScreen extends React.Component<IProps, IState> {
             passwordError: false,
             conditions: {} as IConditions
         }
-        if (!this.session) {
-            logger.log("Session not found. Redirecting to login screen.");
-        }
     }
 
     componentDidMount(): void { }

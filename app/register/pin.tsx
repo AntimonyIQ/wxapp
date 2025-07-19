@@ -22,14 +22,12 @@ interface IState {
 
 export default class RegisterPinScreen extends React.Component<IProps, IState> {
     private session: UserData = sessionManager.getUserData();
-    private registration: IRegistration;
     private readonly title = "Create Pin";
     private pinRefs: React.RefObject<TextInput | null>[] = Array(4).fill(null).map(() => React.createRef<TextInput>());
 
     constructor(props: IProps) {
         super(props);
         this.state = { pin: Array(4).fill(""), loading: false };
-        this.registration = this.session.registration;
     }
 
     componentDidMount(): void { }
@@ -40,7 +38,7 @@ export default class RegisterPinScreen extends React.Component<IProps, IState> {
             const { pin } = this.state;
 
             const registration: IRegistration = {
-                ...this.registration,
+                ...this.session.registration,
                 pin: pin.join(""),
             };
 

@@ -24,7 +24,6 @@ interface IState {
 
 export default class TagScreen extends React.Component<IProps, IState> {
     private session: UserData = sessionManager.getUserData();
-    private registration: IRegistration;
     private readonly title = "Set your WX Tag";
     constructor(props: IProps) {
         super(props);
@@ -32,7 +31,6 @@ export default class TagScreen extends React.Component<IProps, IState> {
         if (!this.session) {
             logger.log("Session not found. Redirecting to login screen.");
         }
-        this.registration = this.session.registration;
     }
 
     componentDidMount(): void { }
@@ -43,7 +41,7 @@ export default class TagScreen extends React.Component<IProps, IState> {
             const { username } = this.state;
 
             const registration: IRegistration = {
-                ...this.registration,
+                ...this.session.registration,
                 tagName: `${username}-wx`,
                 username: username,
             };

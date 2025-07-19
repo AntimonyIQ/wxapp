@@ -25,7 +25,6 @@ interface IState {
 
 export default class ConfirmPinScreen extends React.Component<IProps, IState> {
     private session: UserData = sessionManager.getUserData();
-    private registration: IRegistration;
     private readonly title = "Confirm Pin";
     private pinRefs: React.RefObject<TextInput | null>[] = Array(4).fill(null).map(() => React.createRef<TextInput>());
     constructor(props: IProps) {
@@ -34,7 +33,6 @@ export default class ConfirmPinScreen extends React.Component<IProps, IState> {
         if (!this.session) {
             logger.log("Session not found. Redirecting to login screen.");
         }
-        this.registration = this.session.registration;
     }
 
     componentDidMount(): void { }
@@ -43,15 +41,16 @@ export default class ConfirmPinScreen extends React.Component<IProps, IState> {
         try {
             this.setState({ loading: true });
             const { confirmPin } = this.state;
-            const pin = this.registration.pin;
+            const registration: IRegistration = this.session.registration;
+            const pin = registration.pin;
 
             await Defaults.IS_NETWORK_AVAILABLE();
             if (pin !== confirmPin.join("")) throw new Error("Pin does not match");
-            if (!this.registration.phoneNumber) throw new Error("Invalid Phone number");
-            if (!this.registration.countryCode) throw new Error("Invalid country code");
+            if (!registration.phoneNumber) throw new Error("Invalid Phone number");
+            if (!registration.countryCode) throw new Error("Invalid country code");
 
-            const codeOnly = this.registration.countryCode.replace('+', '');
-            const phoneClean = this.registration.phoneNumber.replace(/^0+/, '');
+            const codeOnly = registration.countryCode.replace('+', '');
+            const phoneClean = registration.phoneNumber.replace(/^0+/, '');
             const fullPhone = codeOnly + phoneClean;
 
             const res = await fetch(`${Defaults.API}/auth/register`, {
@@ -63,15 +62,15 @@ export default class ConfirmPinScreen extends React.Component<IProps, IState> {
                     'x-wealthx-location': this.session.location,
                 },
                 body: JSON.stringify({
-                    country: this.registration.country,
-                    address: this.registration.country,
-                    email: this.registration.email,
-                    dateOfBirth: this.registration.dateOfBirth,
-                    username: this.registration.username,
-                    pin: this.registration.pin,
+                    country: registration.country,
+                    address: registration.country,
+                    email: registration.email,
+                    dateOfBirth: registration.dateOfBirth,
+                    username: registration.username,
+                    pin: registration.pin,
                     phoneNumber: fullPhone,
-                    referralCode: this.registration.referralCode,
-                    fullName: this.registration.fullName,
+                    referralCode: registration.referralCode,
+                    fullName: registration.fullName,
                 }),
             });
 
