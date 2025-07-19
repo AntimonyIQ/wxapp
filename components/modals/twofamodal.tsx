@@ -18,11 +18,6 @@ import ThemedText from '../ThemedText';
 import { Image } from 'expo-image';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-interface IMessage {
-    title: string;
-    description: string;
-}
-
 interface MessageModalProps {
     visible: boolean;
     onClose: () => void;

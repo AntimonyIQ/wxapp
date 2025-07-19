@@ -51,7 +51,7 @@ export default class LoginScreen extends React.Component<IProps, IState> {
     }
 
     componentDidMount(): void {
-        this.geolocation();
+        // this.geolocation();
     }
 
     private geolocation = async () => {
@@ -134,7 +134,7 @@ export default class LoginScreen extends React.Component<IProps, IState> {
     }
 
     render(): React.ReactNode {
-        const { email, password, loading, authmodal } = this.state;
+        const { email, password, loading, authmodal } = this.state; 5
         return (
             <>
                 <Stack.Screen options={{ title: this.title, headerShown: false }} />
