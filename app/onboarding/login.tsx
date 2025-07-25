@@ -134,7 +134,8 @@ export default class LoginScreen extends React.Component<IProps, IState> {
     }
 
     render(): React.ReactNode {
-        const { email, password, loading, authmodal } = this.state; 5
+        const { email, password, loading, authmodal } = this.state;
+        const { user } = this.session;
         return (
             <>
                 <Stack.Screen options={{ title: this.title, headerShown: false }} />
@@ -173,7 +174,7 @@ export default class LoginScreen extends React.Component<IProps, IState> {
                                         Gradient
                                         title={loading ? "Logging In..." : "Log In"}
                                         onPress={(): void => {
-                                            this.session.user?.twoFactorEnabled === true
+                                            (user !== undefined && user?.twoFactorEnabled === true)
                                                 ? this.setState({ authmodal: true })
                                                 : this.handleLogin();
                                         }}

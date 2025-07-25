@@ -106,6 +106,7 @@ export default class RootLayout extends React.Component<{}, RootLayoutState> {
 
     public async componentDidMount() {
         try {
+            // await sessionManager.logout();
             await sessionManager.loadSession();
             await SplashScreen.preventAutoHideAsync();
 
