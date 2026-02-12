@@ -103,7 +103,7 @@ export default class WithdrawAccountScreen extends React.Component<IProps, IStat
                             onPress={() => router.back()}
                         >
                             <Image
-                                source={require("../../assets/icons/chevron-left.svg")}
+                                source={require("../../assets/icons/chevron_right.svg")}
                                 style={styles.backIcon}
                                 tintColor={"#000000"} />
                             <ThemedText style={styles.backText}>Back</ThemedText>
@@ -224,6 +224,7 @@ export default class WithdrawAccountScreen extends React.Component<IProps, IStat
                         })}
                         onClose={() => this.setState({ list_modal: !list_modal })}
                         lists={lists}
+                        loading={loadingAccounts}
                         showSearch={true} />
                     <MessageModal
                         visible={error_modal}
@@ -252,7 +253,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: 16,
-        backgroundColor: "transparent"
+        backgroundColor: "transparent",
     },
     backButton: {
         flexDirection: 'row',

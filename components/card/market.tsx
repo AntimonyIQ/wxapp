@@ -14,6 +14,8 @@ interface IMarket {
     percentage: number;
     balanceAmount: string;
     balanceInUsd?: string;
+    isToken?: boolean;
+    networkLogoURI?: string;
 }
 
 interface MarketProps {
@@ -36,7 +38,18 @@ export default class MarketCard extends React.Component<MarketProps> {
                     alignItems: 'center',
                 }}>
                 <ThemedView style={{ flexDirection: 'row', gap: 12, backgroundColor: "transparent", alignItems: "center" }}>
-                    <Image source={{ uri: market.icon }} style={styles.logo} />
+                    {/* Render icon with network overlay for tokens */}
+                    {market.isToken && market.networkLogoURI ? (
+                        <ThemedView style={{ position: 'relative', width: 35, height: 35, backgroundColor: "transparent" }}>
+                            <Image source={{ uri: market.icon }} style={styles.logo} />
+                            <Image
+                                source={{ uri: market.networkLogoURI }}
+                                style={styles.networkIconOverlay}
+                            />
+                        </ThemedView>
+                    ) : (
+                        <Image source={{ uri: market.icon }} style={styles.logo} />
+                    )}
                     <ThemedView style={{ flexDirection: "column", gap: 0, backgroundColor: "transparent" }}>
                         <ThemedView style={{ flexDirection: "row", gap: 3, alignItems: "flex-start", backgroundColor: "transparent" }}>
                             <ThemedText
@@ -91,7 +104,7 @@ export default class MarketCard extends React.Component<MarketProps> {
                             fontSize: 14,
                             fontFamily: 'AeonikMedium',
                         }}>
-                        {hideBalance ? "****" : `${market.balanceAmount} ${market.subHead}`}
+                        {hideBalance ? "● ● ● ● ●" : `${market.balanceAmount} ${market.subHead}`}
                     </ThemedText>
                     {market.wallet && (
                         <ThemedText
@@ -101,7 +114,7 @@ export default class MarketCard extends React.Component<MarketProps> {
                                 color: "#757575",
                                 textAlign: 'right',
                             }}>
-                            {hideBalance ? "****" : `$${market.balanceInUsd}`}
+                            {hideBalance ? "● ● ● ● ●" : `$${market.balanceInUsd}`}
                         </ThemedText>
                     )}
                 </ThemedView>
@@ -115,6 +128,18 @@ const styles = StyleSheet.create({
         width: 35,
         height: 35,
         marginBottom: 10,
+        borderRadius: 17.5,
+    },
+    networkIconOverlay: {
+        width: 16,
+        height: 16,
+        borderRadius: 8,
+        position: 'absolute',
+        right: -2,
+        bottom: 8,
+        backgroundColor: '#FFFFFF',
+        borderWidth: 2,
+        borderColor: '#FFFFFF',
     },
 });
 

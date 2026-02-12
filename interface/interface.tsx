@@ -194,6 +194,8 @@ export interface IKeys {
 }
 
 export interface ITransaction {
+    transactionId?: string;
+    _id?: string;
     from: string;
     to: string;
     fromCurrency: Coin;
@@ -212,6 +214,9 @@ export interface ITransaction {
     network: BlockchainNetwork;
     createdAt: Date;
     updatedAt: Date;
+    swapToAmount?: number;
+    billDetails?: any;
+    billType?: string;
 }
 
 export interface IOrder {
@@ -278,6 +283,8 @@ export interface IMarket {
     volume_change_24h: number;
     market_cap: number;
     active: boolean;
+    isToken?: boolean;
+    networkLogoURI?: string;
 }
 
 export interface IProviderMarket extends IMarket {
@@ -375,6 +382,8 @@ export interface UserData {
     totalBalanceUsd: number;
     passkey: string;
     params: IParams;
+    passkeyEnabled?: boolean;
+    refreshToken?: string;
     // [key: string]: any;
 }
 

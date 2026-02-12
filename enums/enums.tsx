@@ -206,12 +206,9 @@ export enum UserType {
 }
 
 export enum TransactionStatus {
-    PENDING = "PENDING",
-    REJECTED = "REJECTED",
-    CANCELED = "CANCELED",
-    EXPIRED = "EXPIRED",
-    FAILED = "FAILED",
-    SUCCESS = "SUCCESS",
+    PENDING = "pending",
+    SUCCESS = "success",
+    FAILED = "failed",
 }
 
 export enum BiometricType {

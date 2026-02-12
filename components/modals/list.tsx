@@ -1,14 +1,51 @@
 
-import React from 'react';
-import { Modal, StyleSheet, TouchableWithoutFeedback, Pressable, ColorSchemeName } from 'react-native';
-import { Image } from 'expo-image';
-import ListButton from '../button/list';
+import ListShimmer from '@/components/ListShimmer';
 import { IList } from '@/interface/interface';
 import logger from '@/logger/logger';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { Image } from 'expo-image';
+import React from 'react';
+import { Appearance, FlatList, Modal, Pressable, StyleSheet, TouchableWithoutFeedback } from 'react-native';
 import TextField from '../inputs/text';
-import { FlatList } from "react-native";
-import ThemedView from '../ThemedView';
 import ThemedText from '../ThemedText';
+import ThemedView from '../ThemedView';
+
+interface IListBtnProps {
+    icon: string;
+    name: string;
+    description: string;
+    onPress: () => void;
+}
+
+class ListButton extends React.Component<IListBtnProps, {}> {
+    constructor(props: IListBtnProps) { super(props); }
+    render() {
+        const { icon, name, description, onPress } = this.props;
+
+        // Handle both web URIs and local require() assets
+        const imageSource = typeof icon === 'string' ? { uri: icon } : icon;
+
+        return (
+            <Pressable
+                onPress={onPress}
+                style={styles.container}
+            >
+                <Image
+                    source={imageSource}
+                    style={styles.icon}
+                />
+                <ThemedView>
+                    <ThemedText style={styles.nameText}>
+                        {name}
+                    </ThemedText>
+                    <ThemedText style={styles.abbText}>
+                        {description}
+                    </ThemedText>
+                </ThemedView>
+            </Pressable>
+        );
+    }
+}
 
 interface ListProps {
     visible: boolean;
@@ -16,6 +53,8 @@ interface ListProps {
     onClose: () => void;
     listChange: (list: IList) => void;
     showSearch?: boolean;
+    title?: string;
+    loading?: boolean;
 }
 
 interface ListState {
@@ -57,12 +96,12 @@ export default class ListModal extends React.Component<ListProps, ListState> {
     };
 
     render(): React.ReactNode {
-        const { visible, onClose, lists, listChange, showSearch } = this.props;
+        const { visible, onClose, lists, listChange, showSearch, title, loading } = this.props;
         const { search, displayedItems } = this.state;
 
-        const filtered: IList[] = lists
-            .filter((list) => list.name.toLowerCase().includes(search.toLowerCase()))
-            .slice(0, displayedItems);
+        const filtered: IList[] = lists.filter((list) =>
+            list.name.toLowerCase().includes(search.toLowerCase())
+        ).slice(0, displayedItems);
 
         return (
             <Modal
@@ -70,19 +109,22 @@ export default class ListModal extends React.Component<ListProps, ListState> {
                 transparent={true}
                 animationType="slide"
                 presentationStyle='overFullScreen'
-                statusBarTranslucent={true}>
+                statusBarTranslucent={true}
+                onRequestClose={onClose}
+            >
                 <TouchableWithoutFeedback onPress={onClose}>
                     <ThemedView style={styles.modalContainer}>
                         <TouchableWithoutFeedback onPress={() => { }}>
                             <ThemedView style={styles.modalContent}>
                                 <ThemedView style={styles.header}>
                                     <ThemedView style={styles.headerIconPlaceholder} />
-                                    <ThemedText style={styles.headerText}>Select Asset</ThemedText>
+                                    <ThemedText style={styles.headerText}>{title || "Select Asset"}</ThemedText>
                                     <Pressable onPress={onClose}>
                                         <Image
-                                            source={require("../../assets/icons/close.svg")}
+                                            source={require("@/assets/icons/close.svg")}
                                             style={{ width: 24, height: 24 }}
-                                            tintColor={"#000"} />
+                                            contentFit='contain'
+                                        />
                                     </Pressable>
                                 </ThemedView>
                                 {showSearch && (
@@ -97,6 +139,14 @@ export default class ListModal extends React.Component<ListProps, ListState> {
                                         />
                                     </ThemedView>
                                 )}
+                                {loading && <ListShimmer />}
+                                {!loading && filtered.length === 0 && (
+                                    <ThemedView style={styles.emptyState}>
+                                        <MaterialIcons name="search-off" size={48} color="#E0E0E0" />
+                                        <ThemedText style={styles.emptyStateText}>No results found</ThemedText>
+                                    </ThemedView>
+                                )}
+                                {!loading && filtered.length > 0 && (
                                 <FlatList
                                     data={filtered}
                                     keyExtractor={(item, index) => index.toString()}
@@ -115,6 +165,7 @@ export default class ListModal extends React.Component<ListProps, ListState> {
                                     onEndReachedThreshold={0.5}
                                     onScroll={this.handleScrollUp}
                                 />
+                                )}
                             </ThemedView>
                         </TouchableWithoutFeedback>
                     </ThemedView>
@@ -153,5 +204,45 @@ const styles = StyleSheet.create({
     headerIconPlaceholder: {
         height: 24,
         width: 24,
+    },
+    container: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        padding: 8,
+        marginBottom: 8,
+    },
+    icon: {
+        width: 24,
+        height: 24,
+        resizeMode: 'contain',
+    },
+    nameText: {
+        fontSize: 14,
+        fontFamily: 'AeonikMedium',
+        lineHeight: 16,
+    },
+    abbText: {
+        color: Appearance.getColorScheme() === "dark" ? "#cdcdcd" : '#757575',
+        fontSize: 12,
+        fontFamily: 'AeonikRegular',
+        lineHeight: 16,
+    },
+    abText: {
+        color: Appearance.getColorScheme() === "dark" ? "#cdcdcd" : '#757575',
+        fontSize: 12,
+        fontFamily: 'AeonikRegular',
+        lineHeight: 16,
+    },
+    emptyState: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 40,
+        gap: 12,
+    },
+    emptyStateText: {
+        fontFamily: 'AeonikRegular',
+        fontSize: 14,
+        color: '#757575',
     },
 });

@@ -17,6 +17,7 @@ import { BlockchainNetwork, Coin, WalletType } from "@/enums/enums";
 import { IMarket, UserData } from "@/interface/interface";
 import logger from "@/logger/logger";
 import sessionManager from "@/session/session";
+import { getAssetBySymbolAndNetwork, getAssetLogoURI } from "@/data/assets";
 import * as Clipboard from 'expo-clipboard';
 import { Image } from "expo-image";
 import { router, Stack } from "expo-router";
@@ -31,6 +32,7 @@ interface IProps { }
 
 interface IState {
     asset: IMarket;
+    balanceAsset: IMarket | undefined; // Store the asset used for balance (likely BSC)
 }
 
 export default class ReceiveScreen extends React.Component<IProps, IState> {
@@ -54,7 +56,8 @@ export default class ReceiveScreen extends React.Component<IProps, IState> {
                 volume_change_24h: 0,
                 market_cap: 0,
                 active: false
-            }
+            },
+            balanceAsset: undefined,
         };
         if (!this.session || !this.session.isLoggedIn) {
             logger.log("Session not found. Redirecting to login screen.");
@@ -65,12 +68,28 @@ export default class ReceiveScreen extends React.Component<IProps, IState> {
     componentDidMount(): void {
         const { currency, network } = this.session.params;
         const asset: IMarket = Defaults.FIND_MARKET(currency, network);
-        this.setState({ asset });
+
+        // Find BSC version for balance if available, otherwise use current asset
+        const session = sessionManager.getUserData();
+        let balanceAsset = session.markets.find(m => m.currency === currency && m.network === BlockchainNetwork.BSC);
+
+        if (!balanceAsset) {
+            balanceAsset = asset;
+        }
+
+        this.setState({ asset, balanceAsset });
     }
 
-    private showNetwork = (symbol: string): string => {
-        if (!symbol) throw new Error("pleas provide a symbol");
-        return symbol.toUpperCase() === "USDT" || symbol.toUpperCase() === "USDC" ? "(BEP-20)" : "";
+    private showNetwork = (asset: IMarket): string => {
+        if (!asset) return "";
+        const networkNames: Record<string, string> = {
+            [BlockchainNetwork.ETHEREUM]: '(ERC-20)',
+            [BlockchainNetwork.BSC]: '(BEP-20)',
+            [BlockchainNetwork.TRON]: '(TRC-20)',
+            [BlockchainNetwork.BTC]: '(BTC)',
+            [BlockchainNetwork.XRP]: '(Ripple)',
+        };
+        return networkNames[asset.network] || `(${asset.network})`;
     }
 
     private share = async () => {
@@ -114,7 +133,13 @@ export default class ReceiveScreen extends React.Component<IProps, IState> {
     };
 
     render(): React.ReactNode {
-        const { asset } = this.state;
+        const { asset, balanceAsset } = this.state;
+        const displayBalance = balanceAsset ? balanceAsset.balance : asset.balance;
+        const displayAsset = balanceAsset || asset;
+
+        const icon = getAssetLogoURI(asset.currency);
+        const iconSource = icon ? { uri: icon } : { uri: asset.icon };
+
         return (
             <>
                 <Stack.Screen options={{ title: this.title, headerShown: false }} />
@@ -142,14 +167,14 @@ export default class ReceiveScreen extends React.Component<IProps, IState> {
                                 style={{ width: 16, height: 16 }}
                             />
                             <ThemedText style={styles.infoText}>
-                                Only send {asset.currency} {this.showNetwork(asset.currency)} assets to this address. Any other assets
+                                Only send {asset.currency} {this.showNetwork(asset)} assets to this address. Any other assets
                                 will be lost forever.
                             </ThemedText>
                         </ThemedView>
 
                         <ThemedView style={styles.qrCodeSection}>
                             <ThemedView style={styles.walletLabel}>
-                                <Image source={{ uri: asset.icon }} style={{ width: 20, height: 20 }} />
+                                <Image source={iconSource} style={{ width: 20, height: 20 }} contentFit="contain" />
                                 <ThemedText style={styles.walletLabelText}>
                                     {asset.currency} wallet address
                                 </ThemedText>
@@ -180,7 +205,7 @@ export default class ReceiveScreen extends React.Component<IProps, IState> {
                                 </Pressable>
                             </Pressable>
                             <ThemedText style={{ fontFamily: 'AeonikMedium', }}>
-                                Balance: {this.formatToMoneyString(asset.balance)} {asset.currency}
+                                Balance: {this.formatToMoneyString(displayBalance)} {displayAsset.currency}
                             </ThemedText>
                         </ThemedView>
                     </ThemedView>
@@ -209,6 +234,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: 16,
+        paddingTop: Platform.OS === "web" ? 20 : 0
     },
     backButton: {
         flexDirection: 'row',
@@ -236,7 +262,7 @@ const styles = StyleSheet.create({
         height: 24,
     },
     content: {
-        paddingHorizontal: 16,
+        paddingHorizontal: Platform.OS === "web" ? 10 : 16,
         paddingVertical: 30,
         alignItems: 'center',
     },
@@ -260,6 +286,8 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         marginTop: 45,
+        width: '100%',
+        paddingHorizontal: 10,
     },
     walletLabel: {
         flexDirection: 'row',

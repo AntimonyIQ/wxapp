@@ -1,11 +1,12 @@
+import Defaults from '@/app/default/default';
+import { IMarket, IParams, UserData } from '@/interface/interface';
+import sessionManager from '@/session/session';
+import { router } from 'expo-router';
 import React from 'react';
 import { Image, Pressable, StyleSheet } from 'react-native';
-import { IMarket, IParams, UserData } from '@/interface/interface';
-import { router } from 'expo-router';
-import ThemedView from './ThemedView';
 import ThemedText from './ThemedText';
-import Defaults from '@/app/default/default';
-import sessionManager from '@/session/session';
+import ThemedView from './ThemedView';
+import { getAssetLogoURI } from '@/data/assets';
 
 export interface ICard {
     item: IMarket;
@@ -35,39 +36,51 @@ class Card extends React.Component<ICard> {
 
     render() {
         const { item } = this.props;
-        const volumeChange24h = this.calculatePercentageChange(item.percent_change_24h);
+        // Use legacy logic for displayed change value if desired, or stick to percent_change_24h formatted nicely.
+        // Card.js uses item.volume_change_24h.toFixed(2).
+        // Card.tsx previously used percent_change_24h.toFixed(2) + '%'.
+        // I will follow Card.js visual structure but improve the data if needed.
+        // Legacy Card.js Code: {Number(item?.volume_change_24h || 0).toFixed(2)}
+
+        // However, usually volume change is large number, percent change is small. 
+        // Based on "item.percent_change_24h >= 0" check for color, it implies we want to show percent change or something related to it.
+        // I'll stick to item.volume_change_24h to match legacy EXACTLY as requested ("USE IT TO CORRECT THE CARD.TSX").
+
+        const changeValue = Number(item.volume_change_24h || 0).toFixed(2);
 
         return (
             <Pressable
                 style={styles.cardContainer}
                 onPress={this.handleSelectedCoin}>
-                <Image source={{ uri: item.icon }} style={styles.logo} />
+                <Image source={{ uri: getAssetLogoURI(item.currency) || item.icon }} style={styles.logo} />
                 <ThemedView style={styles.textContainer}>
-                    <ThemedText style={styles.symbolText}>{item.currency}</ThemedText>
-                    <ThemedText style={styles.priceText}>
-                        {item.price.toLocaleString('en-US', {
-                            style: 'currency',
-                            currency: 'USD',
-                        })}
-                    </ThemedText>
-                    <ThemedView style={styles.changeContainer}>
-                        {item.percent_change_24h >= 0 ? (
-                            <Image
-                                source={require("../assets/icons/positive.svg")}
-                                style={{ width: 15, height: 15, transform: [{ rotate: "180deg" }] }} />
-                        ) : (
-                            <Image
-                                source={require("../assets/icons/negative.svg")}
-                                style={{ width: 15, height: 15, transform: [{ rotate: "180deg" }] }} />
-                        )}
-                        <ThemedText
-                            style={{
-                                color: item.percent_change_24h >= 0 ? '#28806F' : 'red',
-                                ...styles.changeText,
-                            }}
-                        >
-                            {volumeChange24h}
+                    <ThemedText style={styles.nameText}>{item.name}</ThemedText>
+                    <ThemedView style={styles.priceVolumeRow}>
+                        <ThemedText style={styles.priceText}>
+                            {Number(item.price || 0).toLocaleString('en-US', {
+                                style: 'currency',
+                                currency: 'USD',
+                            })}
                         </ThemedText>
+                        <ThemedView style={styles.changeContainer}>
+                            {item.percent_change_24h >= 0 ? (
+                                <Image
+                                    source={require("../assets/icons/positive.svg")}
+                                    style={{ width: 14, height: 14 }} />
+                            ) : (
+                                <Image
+                                    source={require("../assets/icons/negative.svg")}
+                                    style={{ width: 14, height: 14 }} />
+                            )}
+                            <ThemedText
+                                style={{
+                                    color: item.percent_change_24h >= 0 ? '#28806F' : 'red',
+                                    ...styles.changeText,
+                                }}
+                            >
+                                {changeValue}
+                            </ThemedText>
+                        </ThemedView>
                     </ThemedView>
                 </ThemedView>
             </Pressable>
@@ -80,11 +93,9 @@ const styles = StyleSheet.create({
         padding: 12,
         gap: 12,
         borderRadius: 12,
-        width: '48%',
-        margin: 4,
-        flexDirection: "column",
-        alignItems: "flex-start",
-        backgroundColor: '#F5F5F5',
+        backgroundColor: 'white',
+        width: 160,
+        marginRight: 8,
     },
     logo: {
         width: 20,
@@ -92,7 +103,19 @@ const styles = StyleSheet.create({
     },
     textContainer: {
         gap: 4,
-        backgroundColor: "transparent",
+        backgroundColor: 'transparent',
+    },
+    nameText: {
+        color: '#757575',
+        fontSize: 10,
+        fontFamily: 'AeonikRegular',
+        textTransform: 'uppercase',
+    },
+    priceVolumeRow: {
+        flexDirection: 'row',
+        alignItems: "flex-end",
+        justifyContent: 'space-between',
+        backgroundColor: 'transparent',
     },
     symbolText: {
         color: '#757575',
@@ -109,7 +132,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 4,
-        backgroundColor: "transparent",
+        backgroundColor: 'transparent',
     },
     changeText: {
         fontFamily: 'AeonikRegular',

@@ -10,21 +10,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import React from "react";
-import sessionManager from "@/session/session";
-import logger from "@/logger/logger";
-import { Href, router, Stack } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import { ActivityIndicator, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, TouchableOpacity } from "react-native";
-import { IMarket, IResponse, ITransaction, UserData } from "@/interface/interface";
-import { Image } from "expo-image";
-import GraphModal from "@/components/modals/graph";
-import Defaults from "../default/default";
 import ThemedSafeArea from "@/components/ThemeSafeArea";
 import ThemedText from "@/components/ThemedText";
 import ThemedView from "@/components/ThemedView";
-import { BlockchainNetwork, Coin, Status, TransactionType, WalletType } from "@/enums/enums";
+import GraphModal from "@/components/modals/graph";
 import ListModal from "@/components/modals/list";
+import { getAssetBySymbolAndNetwork, getAssetLogoURI } from "@/data/assets";
+import { BlockchainNetwork, Coin, Fiat, Status, TransactionStatus, TransactionType, WalletType } from "@/enums/enums";
+import { IMarket, IResponse, ITransaction, UserData } from "@/interface/interface";
+import logger from "@/logger/logger";
+import sessionManager from "@/session/session";
+import { Image } from "expo-image";
+import { router, Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import React from "react";
+import { ActivityIndicator, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, TouchableOpacity } from "react-native";
+import Defaults from "../default/default";
 
 interface IProps { }
 
@@ -77,12 +78,73 @@ export default class CoinScreen extends React.Component<IProps, IState> {
 
     componentDidMount(): void {
         const { currency, network } = this.session.params;
-        const asset: IMarket = Defaults.FIND_MARKET(currency, network);
-        this.setState({ asset });
-        this.fetchTransactionsData();
+        const asset: IMarket = this.filterByCurrencyAndNetwork(currency, network);
+
+        this.setState({ asset }, () => {
+            if (asset.currency === Coin.NGN) this.fetchNgnRate();
+            this.fetchTransactionsData();
+        });
     }
 
-    private showNetwork = (symbol: Coin): string => (symbol.toUpperCase() === Coin.USDT || symbol.toUpperCase() === Coin.USDC) ? "(BEP20)" : "";
+    private fetchNgnRate = async () => {
+        try {
+            const url = 'https://open.er-api.com/v6/latest/USD';
+            const res = await fetch(url);
+            const data = await res.json();
+
+            if (!data || data.result !== 'success' || !data.rates || !data.rates.NGN) {
+                return;
+            }
+
+            const rateNgn = Number(data.rates.NGN);
+            if (!rateNgn || Number.isNaN(rateNgn) || rateNgn <= 0) {
+                return;
+            }
+
+            // data.rates.NGN is NGN per 1 USD. We need USD per 1 NGN -> 1 / rateNgn
+            const usdPerNgn = 1 / rateNgn;
+
+            this.setState((prev) => ({
+                asset: {
+                    ...prev.asset,
+                    price: usdPerNgn,
+                    balanceUsd: prev.asset.balance * usdPerNgn
+                }
+            }));
+        } catch (error) {
+            console.warn('Failed to fetch NGN rate:', error);
+            this.setState((prev) => ({ asset: { ...prev.asset, price: 0, balanceUsd: 0 } }));
+        }
+    };
+
+
+    private filterByCurrencyAndNetwork = (currency: Coin | Fiat, network?: BlockchainNetwork): IMarket => {
+        const session = sessionManager.getUserData();
+        let market = session.markets.find((market) =>
+            market.currency === currency && market.network === network
+        );
+
+        // If not found and network is BSC, prioritize BSC version
+        if (!market && network === BlockchainNetwork.BSC) {
+            market = session.markets.find((market) =>
+                market.currency === currency && market.network === BlockchainNetwork.BSC
+            );
+        }
+
+        // Fallback to just currency match
+        if (!market) {
+            // Prioritize BSC if available
+            market = session.markets.find((market) => market.currency === currency && market.network === BlockchainNetwork.BSC);
+
+            // If still not found, take first available
+            if (!market) {
+                market = session.markets.find((market) => market.currency === currency);
+            }
+        }
+
+        if (!market) throw new Error(`Error finding ${currency} wallet on ${network} network`);
+        return market;
+    }; private showNetwork = (symbol: Coin): string => (symbol.toUpperCase() === Coin.USDT || symbol.toUpperCase() === Coin.USDC) ? "(BEP20)" : "";
 
     private onRefresh = async () => {
         this.setState({ refreshing: true });
@@ -94,6 +156,86 @@ export default class CoinScreen extends React.Component<IProps, IState> {
         if (!str) return str;
         return str.charAt(0).toUpperCase() + str.slice(1);
     }
+
+    private getAmountColor = (transaction: ITransaction, type: string) => {
+        if (transaction.status === TransactionStatus.FAILED) return "#96132C";
+        if (type === TransactionType.TRANSFER || type === TransactionType.WITHDRAWAL) return "#96132C";
+        if (type === TransactionType.DEPOSIT) return "#28806F";
+        return "#1F1F1F"; // For swap
+    };
+
+    private renderTransactionIcon = (transaction: ITransaction) => {
+        // For swap transactions, show overlay of two currency icons
+        if (transaction.type === TransactionType.SWAP && transaction.fromCurrency && transaction.toCurrency) {
+            const fromLogoURI = getAssetLogoURI(transaction.fromCurrency);
+            const toLogoURI = getAssetLogoURI(transaction.toCurrency);
+
+            if (fromLogoURI && toLogoURI) {
+                return (
+                    <ThemedView style={{ position: 'relative', width: 50, height: 40, backgroundColor: 'transparent' }}>
+                        <Image
+                            source={{ uri: fromLogoURI }}
+                            style={{
+                                width: 32,
+                                height: 32,
+                                borderRadius: 16,
+                                position: 'absolute',
+                                left: 0,
+                                top: 0,
+                                backgroundColor: '#FFFFFF',
+                                borderWidth: 2,
+                                borderColor: '#FFFFFF',
+                            }}
+                            contentFit="contain"
+                        />
+                        <Image
+                            source={{ uri: toLogoURI }}
+                            style={{
+                                width: 32,
+                                height: 32,
+                                borderRadius: 16,
+                                position: 'absolute',
+                                right: 0,
+                                bottom: 0,
+                                backgroundColor: '#FFFFFF',
+                                borderWidth: 2,
+                                borderColor: '#FFFFFF',
+                            }}
+                            contentFit="contain"
+                        />
+                    </ThemedView>
+                );
+            }
+        }
+
+        // For all other transaction types, try to get currency icon
+        const logoURI = getAssetLogoURI(transaction.fromCurrency);
+        if (logoURI) {
+            return (
+                <Image
+                    source={{ uri: logoURI }}
+                    style={{ width: 40, height: 40, borderRadius: 20 }}
+                    contentFit="contain"
+                />
+            );
+        }
+
+        // Fallback to default icon
+        return (
+            <ThemedView style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: '#253E92',
+                alignItems: 'center',
+                justifyContent: 'center'
+            }}>
+                <ThemedText style={{ color: '#FFFFFF', fontSize: 16, fontFamily: 'AeonikBold' }}>
+                    {transaction.fromCurrency.substring(0, 1)}
+                </ThemedText>
+            </ThemedView>
+        );
+    };
 
     private fetchTransactionsData = async () => {
         try {
@@ -121,7 +263,7 @@ export default class CoinScreen extends React.Component<IProps, IState> {
 
             if (data.status === Status.ERROR) throw new Error(data.message || data.error);
             if (data.status === Status.SUCCESS) {
-                if (!data.handshake) throw new Error('Unable to process transactions right now, please try again.');
+                if (!data.handshake) throw new Error('Invalid Response');
                 const parseData = Defaults.PARSE_DATA(data.data, this.session.client?.privateKey, data.handshake);
 
                 this.setState({
@@ -159,28 +301,74 @@ export default class CoinScreen extends React.Component<IProps, IState> {
                     </ThemedView>
 
                     <ThemedView style={styles.infoContainer}>
+                        {/* Updated Balance Container Logic from CoinScreen.js */}
                         <ThemedView style={styles.balanceContainer}>
-                            <Image source={{ uri: asset.icon }} style={{ width: 25, height: 25 }} />
+                            <ThemedView style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                                <Image source={{ uri: asset.icon }} style={{ width: 40, height: 40, borderRadius: 360 }} />
+                                {asset.isToken && asset.networkLogoURI && (
+                                    <Image
+                                        source={{ uri: getAssetLogoURI(asset.currency) || asset.networkLogoURI }}
+                                        style={{
+                                            width: 16,
+                                            height: 16,
+                                            borderRadius: 8,
+                                            position: 'absolute',
+                                            bottom: 0,
+                                            left: 24,
+                                            backgroundColor: '#FFFFFF',
+                                            borderWidth: 1,
+                                            borderColor: '#FFFFFF',
+                                        }}
+                                    />
+                                )}
+                            </ThemedView>
+
                             <ThemedText style={styles.infoLabel}>{asset.name} {this.showNetwork(asset.currency as Coin)}</ThemedText>
-                            <ThemedText style={styles.balanceText}>{asset.balance} {asset.currency}</ThemedText>
+
+                            <ThemedText style={styles.balanceText}>
+                                {asset.balance.toLocaleString(undefined, {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: ['USDC', 'USDT', 'BUSD', 'NGN'].includes((asset.currency || "").toUpperCase()) ? 2 : 6
+                                })} {asset.currency}
+                            </ThemedText>
+
                             <ThemedText style={styles.balanceValue}>
                                 ≈ {dollarval}
                             </ThemedText>
                         </ThemedView>
 
                         <ThemedView style={styles.actionsContainer}>
-                            {asset.currency === Coin.NGN ? null :
+                            {asset.currency === Coin.NGN ?
+                                (
+                                    <>
+                                        {/* NGN Specific Buttons like Withdraw */}
+                                        <TouchableOpacity
+                                            onPress={() => router.navigate({ pathname: '/withdraw', params: { fiat: 'NGN' } })}
+                                            style={styles.actionButtonContainer}>
+                                            <ThemedView style={styles.actionButton}>
+                                                <Image
+                                                    source={require("../../assets/icons/arrow-up-right.svg")}
+                                                    style={styles.backIcon}
+                                                    tintColor={"#000000"} />
+                                            </ThemedView>
+                                            <ThemedText style={styles.actionText}>Withdrawal</ThemedText>
+                                        </TouchableOpacity>
+                                    </>
+                                ) :
                                 <>
                                     <TouchableOpacity
                                         style={styles.actionButtonContainer}
                                         onPress={() => {
-                                            if (asset.currency === Coin.USDC || asset.currency === Coin.USDT) {
-                                                this.setState({ visible: true, whichnav: "send" });
+                                            if (this.session.user?.isPhoneNumberVerified === false) {
+                                                router.navigate("/phone/welcome");
                                                 return;
                                             }
 
-                                            if (this.session.user?.isPhoneNumberVerified === false) {
-                                                router.navigate("/phone/welcome");
+                                            // Check if this currency exists on multiple networks
+                                            const currencyWallets = this.session.markets.filter(m => m.currency === asset.currency);
+
+                                            if (currencyWallets.length > 1) {
+                                                this.setState({ visible: true, whichnav: "send" });
                                                 return;
                                             }
 
@@ -196,7 +384,10 @@ export default class CoinScreen extends React.Component<IProps, IState> {
                                     </TouchableOpacity>
                                     <TouchableOpacity
                                         onPress={() => {
-                                            if (asset.currency === Coin.USDC || asset.currency === Coin.USDT) {
+                                            // Check if this currency exists on multiple networks
+                                            const currencyWallets = this.session.markets.filter(m => m.currency === asset.currency);
+
+                                            if (currencyWallets.length > 1) {
                                                 this.setState({ visible: true, whichnav: "receive" });
                                                 return;
                                             }
@@ -213,7 +404,18 @@ export default class CoinScreen extends React.Component<IProps, IState> {
                                     </TouchableOpacity>
                                 </>
                             }
-                            <TouchableOpacity onPress={() => router.navigate('/swap')} style={styles.actionButtonContainer}>
+                            <TouchableOpacity
+                                onPress={() => {
+                                    if (asset.currency === Coin.NGN) {
+                                        // For NGN, swap is usually buying BTC or swapping to other crypto
+                                        // The legacy logic seems to swap to BTC or passed currency
+                                        // We will default to swap page which likely handles defaults or we can pass params
+                                        router.push({ pathname: '/swap', params: { from: Coin.NGN } });
+                                    } else {
+                                        router.push({ pathname: '/swap', params: { from: asset.currency, network: asset.network } });
+                                    }
+                                }}
+                                style={styles.actionButtonContainer}>
                                 <ThemedView style={styles.actionButton}>
                                     <Image
                                         source={require("../../assets/icons/refresh.svg")}
@@ -289,7 +491,7 @@ export default class CoinScreen extends React.Component<IProps, IState> {
                                             paddingVertical: 3,
                                             width: "100%",
                                             alignItems: 'center',
-                                        }} onPress={() => router.navigate('/transactiondetails' as Href)} >
+                                        }} onPress={() => router.navigate({ pathname: "/transaction/details", params: { params: JSON.stringify(transaction) } })} >
                                         <ThemedView
                                             style={{
                                                 width: "100%",
@@ -301,22 +503,7 @@ export default class CoinScreen extends React.Component<IProps, IState> {
                                             }}
                                         >
                                             <ThemedView style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
-                                                <ThemedView
-                                                    style={{
-                                                        borderRadius: 360,
-                                                        backgroundColor: transaction.type === TransactionType.TRANSFER ? "#96132C" : "#28806F",
-                                                        width: 40,
-                                                        height: 40,
-                                                        flexDirection: "column",
-                                                        alignItems: "center",
-                                                        justifyContent: "center",
-                                                    }}
-                                                >
-                                                    <Image
-                                                        source={transaction.type === TransactionType.TRANSFER ? require("../../assets/icons/transfercoin.svg") : require("../../assets/icons/deposit.svg")}
-                                                        style={styles.backIcon}
-                                                        tintColor={"#ffffff"} />
-                                                </ThemedView>
+                                                {this.renderTransactionIcon(transaction)}
                                                 <ThemedView
                                                     style={{
                                                         flexDirection: "column",
@@ -354,7 +541,7 @@ export default class CoinScreen extends React.Component<IProps, IState> {
                                                 <ThemedText
                                                     style={{
                                                         fontSize: 14,
-                                                        color: transaction.type === TransactionType.TRANSFER ? "#96132C" : "#28806F",
+                                                        color: this.getAmountColor(transaction, transaction.type),
                                                         fontFamily: 'AeonikMedium',
                                                         textTransform: "uppercase",
                                                     }}
@@ -382,14 +569,32 @@ export default class CoinScreen extends React.Component<IProps, IState> {
 
                     <ListModal
                         visible={visible}
-                        lists={[
-                            { name: "TRON Blockchain network", description: BlockchainNetwork.TRON, icon: "https://s2.coinmarketcap.com/static/img/coins/64x64/1958.png" },
-                            { name: "Binance Smart Chain", description: BlockchainNetwork.BSC, icon: "https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png" }
-                        ]}
+                        title={"Select Network"}
+                        lists={(() => {
+                            const currencyWallets = this.session.markets.filter((m) => m.currency === asset.currency);
+                            return currencyWallets.map((wallet) => {
+                                const networkNames: Record<string, string> = {
+                                    [BlockchainNetwork.ETHEREUM]: 'Ethereum Network',
+                                    [BlockchainNetwork.BSC]: 'Binance Smart Chain',
+                                    [BlockchainNetwork.TRON]: 'TRON Blockchain network',
+                                    [BlockchainNetwork.BTC]: 'Bitcoin Network',
+                                    [BlockchainNetwork.XRP]: 'XRP Ledger',
+                                };
+
+                                const matchedAsset = getAssetBySymbolAndNetwork(wallet.currency, wallet.network);
+
+                                return {
+                                    name: networkNames[wallet.network] || wallet.network,
+                                    description: wallet.network,
+                                    icon: matchedAsset ? matchedAsset.networkLogoURI : wallet.icon
+                                };
+                            });
+                        })()}
                         onClose={() => this.setState({ visible: false })}
                         listChange={async (item) => {
                             const { whichnav } = this.state;
                             this.setState({ visible: false });
+
                             if (this.session.user?.isPhoneNumberVerified === false) {
                                 router.navigate("/phone/welcome");
                                 return;
@@ -453,7 +658,7 @@ export default class CoinScreen extends React.Component<IProps, IState> {
                             <Pressable onPress={() => this.setState({ bottomsheet: !bottomsheet })} style={{ top: -10 }}>
                                 <Image
                                     source={require("../../assets/icons/chevron-left.svg")}
-                                    style={[styles.backIcon, { transform: [{ rotate: "90deg" }] }]}
+                                    style={[styles.backIcon, { transform: [{ rotate: "270deg" }] }]}
                                     tintColor={"#000000"} />
                             </Pressable>
                         </ThemedView>
@@ -477,6 +682,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: 16,
+        paddingTop: Platform.OS === "web" ? 20 : 0
     },
     backButton: {
         flexDirection: 'row',

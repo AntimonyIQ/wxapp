@@ -10,24 +10,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import React from "react";
-import { Keyboard, Platform, Pressable, StyleSheet } from "react-native";
-import logger from "@/logger/logger";
-import { ILocation, IResponse, IUser, UserData } from "@/interface/interface";
-import sessionManager from "@/session/session";
-import { router, Stack } from "expo-router";
-import { Colors } from "@/constants/Colors";
+import { toastRef } from "@/app/default/default";
+import ThemedSafeArea from "@/components/ThemeSafeArea";
+import ThemedText from "@/components/ThemedText";
+import ThemedView from "@/components/ThemedView";
+import BackButton from "@/components/button/back";
 import PrimaryButton from "@/components/button/primary";
 import TextField from "@/components/inputs/text";
-import BackButton from "@/components/button/back";
-import Defaults from "../default/default";
 import LoadingModal from "@/components/modals/loading";
-import { Status } from "@/enums/enums";
-import ThemedSafeArea from "@/components/ThemeSafeArea";
-import ThemedView from "@/components/ThemedView";
-import ThemedText from "@/components/ThemedText";
-import Validate from "@/validator/validator";
 import TwoFAModal from "@/components/modals/twofamodal";
+import SimpleToast from "@/components/toast/toast";
+import { Colors } from "@/constants/Colors";
+import { Status } from "@/enums/enums";
+import { ILocation, IResponse, IUser, UserData } from "@/interface/interface";
+import logger from "@/logger/logger";
+import sessionManager from "@/session/session";
+import Validate from "@/validator/validator";
+import { router, Stack } from "expo-router";
+import React from "react";
+import { Keyboard, Platform, Pressable, StyleSheet } from "react-native";
+import Defaults from "../default/default";
 
 interface IProps { }
 
@@ -115,6 +117,8 @@ export default class LoginScreen extends React.Component<IProps, IState> {
                         authorization: authorization,
                         isLoggedIn: true,
                         user: userParseData,
+                        passkeyEnabled: userParseData.passkeyEnabled,
+                        refreshToken: userParseData.refreshToken,
                     });
 
                     if (userParseData.isSuspended) {
@@ -202,6 +206,7 @@ export default class LoginScreen extends React.Component<IProps, IState> {
                         }}
                     />
                     <LoadingModal loading={loading} />
+                    <SimpleToast ref={toastRef} />
                 </ThemedSafeArea>
             </>
         )

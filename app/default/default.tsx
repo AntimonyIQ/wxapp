@@ -10,13 +10,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { ToastRef, ToastType } from "@/components/toast/toast";
 import { BlockchainNetwork, Coin, Fiat } from "@/enums/enums";
 import Handshake from "@/handshake/handshake";
 import { IMarket, UserData } from "@/interface/interface";
 import sessionManager from "@/session/session";
 import * as Network from 'expo-network';
+import React from 'react';
 import { Platform } from "react-native";
-import Toast, { ToastType } from "react-native-toast-message";
+
+// Create a ref for the toast
+export const toastRef = React.createRef<ToastRef>();
 
 export default class Defaults {
     constructor() { }
@@ -151,13 +155,7 @@ export default class Defaults {
     };
 
     public static TOAST = (message: string, title?: string, type?: ToastType): void => {
-        Toast.show({
-            type: type || 'error',
-            text1: title || 'Action Error',
-            text2: message,
-            text1Style: { fontSize: 16, fontFamily: 'AeonikBold' },
-            text2Style: { fontSize: 12, fontFamily: 'AeonikRegular' },
-        });
+        toastRef.current?.show(message, type || 'error');
     }
 
     public static FIND_MARKET = (currency: Coin | Fiat, network?: BlockchainNetwork): IMarket => {
