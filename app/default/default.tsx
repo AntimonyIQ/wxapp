@@ -39,7 +39,11 @@ export default class Defaults {
     public static readonly HEADERS = {
         "Accept": "*/*",
         "Content-Type": "application/json",
-        'User-Agent': Platform.OS === 'ios' ? 'Iphone' : 'Android',
+        'User-Agent': Platform.OS === 'ios'
+            ? 'Iphone'
+            : Platform.OS === 'android'
+                ? 'Android'
+                : 'Web',
         'x-wealthx-client': Platform.OS === 'ios'
             ? 'ios.wealthx.app'
             : Platform.OS === 'android'
