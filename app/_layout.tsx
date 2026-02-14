@@ -10,23 +10,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import 'react-native-reanimated';
-import * as Font from 'expo-font';
+import { Status } from '@/enums/enums';
+import { INotification, IResponse, UserData } from '@/interface/interface';
+import logger from '@/logger/logger';
+import { addNotificationReceivedListener, addNotificationResponseReceivedListener, registerForPushNotificationsAsync, scheduleNotification } from '@/notifications/notification';
+import sessionManager from '@/session/session';
+import { MaterialIcons } from '@expo/vector-icons';
 import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import * as BackgroundFetch from 'expo-background-fetch';
+import * as Font from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import React from 'react';
-import Toast from 'react-native-toast-message';
-import { Platform, Dimensions, View, Text, ActivityIndicator } from 'react-native';
-import * as BackgroundFetch from 'expo-background-fetch';
 import * as TaskManager from 'expo-task-manager';
-import { addNotificationReceivedListener, addNotificationResponseReceivedListener, registerForPushNotificationsAsync, scheduleNotification } from '@/notifications/notification';
-import logger from '@/logger/logger';
+import React from 'react';
+import { ActivityIndicator, Dimensions, Platform, Text, View } from 'react-native';
+import 'react-native-reanimated';
+import Toast from 'react-native-toast-message';
 import Defaults from './default/default';
-import sessionManager from '@/session/session';
-import { INotification, IResponse, UserData } from '@/interface/interface';
-import { Status } from '@/enums/enums';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -174,7 +175,7 @@ export default class RootLayout extends React.Component<{}, RootLayoutState> {
         if (!this.state.loaded) {
             return (
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                    <ActivityIndicator size="large" color="#0000ff" />
+                    <ActivityIndicator size="large" color="rgba(41,38,98,1.00)" />
                 </View>
             );
         }
@@ -182,8 +183,26 @@ export default class RootLayout extends React.Component<{}, RootLayoutState> {
         return (
             <ThemeProvider value={DefaultTheme}>
                 {isDesktop ?
-                    <View>
-                        <Text>Not supported</Text>
+                    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF' }}>
+                        <MaterialIcons name="phonelink-erase" size={64} color="rgba(41,38,98,1.00)" />
+                        <Text style={{
+                            marginTop: 20,
+                            fontSize: 20,
+                            fontFamily: 'AeonikBold',
+                            color: "rgba(41,38,98,1.00)",
+                            textAlign: 'center'
+                        }}>
+                            Desktop Not Supported
+                        </Text>
+                        <Text style={{
+                            marginTop: 8,
+                            fontSize: 14,
+                            fontFamily: 'AeonikRegular',
+                            color: "#666666",
+                            textAlign: 'center'
+                        }}>
+                            Please use a mobile device.
+                        </Text>
                     </View>
                     :
                     <Stack>
