@@ -131,8 +131,7 @@ export default class LoginScreen extends React.Component<IProps, IState> {
 
         } catch (error: any) {
             logger.error('Failed to login:', error.message);
-            // Defaults.TOAST(error.message, "Login");
-            Defaults.TOAST(JSON.stringify(error), "Login");
+            Defaults.TOAST(error.message, "Login");
         } finally {
             this.setState({ loading: false, password: "" });
         }
