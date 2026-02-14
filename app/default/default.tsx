@@ -40,7 +40,11 @@ export default class Defaults {
         "Accept": "*/*",
         "Content-Type": "application/json",
         'User-Agent': Platform.OS === 'ios' ? 'Iphone' : 'Android',
-        'x-wealthx-client': Platform.OS === 'ios' ? 'ios.wealthx.app' : Platform.OS === 'android' ? 'android.wealthx.app' : 'web.wealthx.app',
+        'x-wealthx-client': Platform.OS === 'ios'
+            ? 'ios.wealthx.app'
+            : Platform.OS === 'android'
+                ? 'android.wealthx.app'
+                : 'web.wealthx.app',
         'x-wealthx-version': '0.2.0',
         'x-wealthx-location': 'Unknown',
     };
