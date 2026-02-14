@@ -18,7 +18,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import Toast from 'react-native-toast-message';
-import { Platform, Dimensions, View, Text } from 'react-native';
+import { Platform, Dimensions, View, Text, ActivityIndicator } from 'react-native';
 import * as BackgroundFetch from 'expo-background-fetch';
 import * as TaskManager from 'expo-task-manager';
 import { addNotificationReceivedListener, addNotificationResponseReceivedListener, registerForPushNotificationsAsync, scheduleNotification } from '@/notifications/notification';
@@ -107,7 +107,7 @@ export default class RootLayout extends React.Component<{}, RootLayoutState> {
     public async componentDidMount() {
         try {
             // await sessionManager.logout();
-            await sessionManager.loadSession();
+            sessionManager.getUserData();
             await SplashScreen.preventAutoHideAsync();
 
             await this.loadFonts();
@@ -174,7 +174,7 @@ export default class RootLayout extends React.Component<{}, RootLayoutState> {
         if (!this.state.loaded) {
             return (
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                    <Text>Loading...</Text>
+                    <ActivityIndicator size="large" color="#0000ff" />
                 </View>
             );
         }
