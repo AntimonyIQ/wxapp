@@ -86,7 +86,9 @@ export default class TabTwoScreen extends React.Component<IProps, IState> {
                         <ProfileButton text={'Legal'} onPress={async () => {
                             await WebBrowser.openBrowserAsync('https://wealthx.app/privacy');
                         }} />
+                        {/*
                         <ProfileButton text={'Chat With Us'} onPress={() => router.navigate('/chat')} />
+                        */}
                         <ProfileButton text={'Get Help'} hideBorder={true} onPress={async () => {
                             await WebBrowser.openBrowserAsync('https://wealthx.app/faq');
                         }} />

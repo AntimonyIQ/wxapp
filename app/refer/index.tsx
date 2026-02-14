@@ -10,29 +10,150 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import React from "react";
-import sessionManager from "@/session/session";
+import PrimaryButton from "@/components/button/primary";
+import LoadingModal from "@/components/modals/loading";
+import MessageModal from "@/components/modals/message";
+import ThemedText from "@/components/ThemedText";
+import ThemedView from "@/components/ThemedView";
+import SimpleToast from "@/components/toast/toast";
+import { Status } from "@/enums/enums";
 import { IList, IUser, UserData } from "@/interface/interface";
-import { router, Stack } from "expo-router";
-import { Platform, SafeAreaView, Share, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import sessionManager from "@/session/session";
 import { Image } from "expo-image";
 import { LinearGradient } from 'expo-linear-gradient';
-import PrimaryButton from "@/components/button/primary";
+import { router, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import ThemedView from "@/components/ThemedView";
-import ThemedText from "@/components/ThemedText";
+import React from "react";
+import { Platform, SafeAreaView, Share, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import Defaults, { toastRef } from "../default/default";
 
 interface IProps { }
 
-interface IState { }
+interface IState {
+    loading: boolean;
+    referralData: {
+        totalReferrals: number;
+        earnings: number;
+        referralId: string;
+    };
+    error_modal: boolean;
+    error_title: string;
+    error_message: string;
+}
 
 export default class ReferScreen extends React.Component<IProps, IState> {
     private session: UserData = sessionManager.getUserData();
     private readonly title = "Refer Screen";
     private user: IUser;
+
     constructor(props: IProps) {
         super(props);
         this.user = this.session.user as IUser;
+        this.state = {
+            loading: false,
+            referralData: {
+                totalReferrals: 0,
+                earnings: 0,
+                referralId: "",
+            },
+            error_modal: false,
+            error_title: "",
+            error_message: "",
+        };
+    }
+
+    componentDidMount(): void {
+        this.fetchReferralDetails();
+    }
+
+    private fetchReferralDetails = async (): Promise<void> => {
+        try {
+            this.setState({ loading: true });
+
+            await Defaults.IS_NETWORK_AVAILABLE();
+
+            const login = Defaults.LOGIN_STATUS();
+            if (!login) {
+                router.dismissTo(this.session.passkeyEnabled ? "/passkey" : "/onboarding/login");
+                return;
+            }
+
+            const res = await fetch(`${Defaults.API}/user/referral`, {
+                method: 'GET',
+                headers: {
+                    ...Defaults.HEADERS,
+                    'x-wealthx-handshake': this.session.client.publicKey,
+                    'x-wealthx-deviceid': this.session.deviceid,
+                    'x-wealthx-devicename': this.session.devicename,
+                    Authorization: `Bearer ${this.session.authorization}`,
+                },
+            });
+
+            const data = await res.json();
+
+            if (data.status === "error") throw new Error(data.message || data.error);
+            if (data.status === "success") {
+                if (!data.handshake) throw new Error('Invalid response');
+                const parseData = Defaults.PARSE_DATA(data.data, this.session.client.privateKey, data.handshake);
+                this.setState({ referralData: parseData });
+            }
+        } catch (error: any) {
+            console.log("Error getting referrals data: ", error);
+            toastRef.current?.show(error.message || "Failed to load referral data", "error");
+        } finally {
+            this.setState({ loading: false });
+        }
+    }
+
+    private withdrawEarnings = async (): Promise<void> => {
+        const { referralData } = this.state;
+
+        // Check if earnings are too low
+        if (referralData.earnings <= 0) {
+            toastRef.current?.show("Referral earning too low for withdrawal, refer to earn more", "warning");
+            return;
+        }
+
+        try {
+            this.setState({ loading: true });
+
+            await Defaults.IS_NETWORK_AVAILABLE();
+
+            const login = Defaults.LOGIN_STATUS();
+            if (!login) {
+                router.dismissTo(this.session.passkeyEnabled ? "/passkey" : "/onboarding/login");
+                return;
+            }
+
+            const res = await fetch(`${Defaults.API}/user/referral/withdraw`, {
+                method: 'POST',
+                headers: {
+                    ...Defaults.HEADERS,
+                    'x-wealthx-handshake': this.session.client.publicKey,
+                    'x-wealthx-deviceid': this.session.deviceid,
+                    'x-wealthx-devicename': this.session.devicename,
+                    Authorization: `Bearer ${this.session.authorization}`,
+                },
+            });
+
+            const data = await res.json();
+
+            if (data.status === "error") throw new Error(data.message || data.error);
+            if (data.status === "success") {
+                await this.fetchReferralDetails();
+                toastRef.current?.show("Earnings withdrawn successfully", "success");
+                return;
+            }
+        } catch (error: any) {
+            console.log("Error withdrawing earnings: ", error);
+            this.setState({
+                error_modal: true,
+                error_title: "Withdrawal Error",
+                error_message: error.message || "Failed to withdraw earnings"
+            });
+        } finally {
+            this.setState({ loading: false });
+        }
     }
 
     private ReferContent = (list: Partial<IList>): React.ReactNode => {
@@ -72,6 +193,7 @@ export default class ReferScreen extends React.Component<IProps, IState> {
     }
 
     render(): React.ReactNode {
+        const { loading, referralData, error_modal, error_title, error_message } = this.state;
         return (
             <>
                 <Stack.Screen options={{ title: this.title, headerShown: false }} />
@@ -153,8 +275,8 @@ export default class ReferScreen extends React.Component<IProps, IState> {
                                         marginTop: 16,
                                     }}
                                 >
-                                    <this.ReferContent name={"Deposit Rewards"} description={"$0.00"} />
-                                    <this.ReferContent name={"Trades Rewards"} description={"$0.00"} />
+                                    <this.ReferContent name={"Total Referrals"} description={referralData.totalReferrals.toString()} />
+                                    <this.ReferContent name={"Total Rewards"} description={referralData.earnings.toLocaleString('en-US', { style: 'currency', currency: 'USD' })} />
                                 </View>
                             </View>
                         </ThemedView>
@@ -165,17 +287,18 @@ export default class ReferScreen extends React.Component<IProps, IState> {
                                 position: 'absolute',
                                 bottom: 40,
                                 width: '100%',
+                                gap: 8,
                             }}
                         >
+                            <PrimaryButton
+                                onPress={this.withdrawEarnings}
+                                title={'Withdraw Earnings'}
+                                Gold
+                            />
                             <PrimaryButton onPress={async () => {
                                 await Share.share({
-                                    title: "Join WealthX and start trading",
-                                    message: `Join WealthX and start trading today! 🚀\n\n` +
-                                        `Getting started is easy:\n` +
-                                        `1️⃣ Visit app.wealthx.app\n` +
-                                        `2️⃣ Sign up for your account\n` +
-                                        `3️⃣ Enter my referral code: ${this.user.username} in the referral field\n\n` +
-                                        `Unlock exclusive benefits by joining through my referral. Let\'s trade smarter together! 📈🔥`,
+                                    title: "Join WealthX",
+                                    message: `Hey! I'm using WealthX to trade and manage my crypto. Join me and use my referral code "${referralData.referralId}" when you sign up!`,
                                 });
                             }} title={'Share Link'} />
 
@@ -184,6 +307,16 @@ export default class ReferScreen extends React.Component<IProps, IState> {
                     </SafeAreaView>
                     <StatusBar style='light' />
                 </LinearGradient>
+                {loading && <LoadingModal loading={loading} />}
+                {error_modal && (
+                    <MessageModal
+                        visible={error_modal}
+                        type={Status.ERROR}
+                        onClose={() => this.setState({ error_modal: false })}
+                        message={{ title: error_title, description: error_message }}
+                    />
+                )}
+                <SimpleToast ref={toastRef} />
             </>
         )
     }

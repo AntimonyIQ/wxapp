@@ -1,24 +1,21 @@
-import React from "react";
-import sessionManager from "@/session/session";
-import { IBank, IList, IUser, UserData } from "@/interface/interface";
-import logger from "@/logger/logger";
-import { router, Stack } from "expo-router";
-import { Platform, StyleSheet, TouchableOpacity, Vibration } from "react-native";
-import MessageModal from "@/components/modals/message";
-import { Image } from "expo-image";
 import PrimaryButton from "@/components/button/primary";
-import LoadingModal from "@/components/modals/loading";
-import { Colors } from "@/constants/Colors";
-import { Pressable } from "react-native";
-import * as Clipboard from 'expo-clipboard';
-import Toast from "react-native-toast-message";
-import Defaults from "../default/default";
-import banks from "../data/banks.json";
 import ListModal from "@/components/modals/list";
+import MessageModal from "@/components/modals/message";
 import ThemedText from "@/components/ThemedText";
 import ThemedView from "@/components/ThemedView";
 import ThemedSafeArea from "@/components/ThemeSafeArea";
+import SimpleToast, { ToastRef } from "@/components/toast/toast";
 import { Coin, Status } from "@/enums/enums";
+import { IBank, IList, IUser, UserData } from "@/interface/interface";
+import logger from "@/logger/logger";
+import sessionManager from "@/session/session";
+import * as Clipboard from 'expo-clipboard';
+import { Image } from "expo-image";
+import { router, Stack } from "expo-router";
+import React from "react";
+import { Platform, Pressable, StyleSheet, TouchableOpacity, Vibration } from "react-native";
+import banks from "../data/banks.json";
+import Defaults from "../default/default";
 
 interface IProps { }
 
@@ -41,6 +38,8 @@ export default class WithdrawAccountScreen extends React.Component<IProps, IStat
     private readonly title = "Withdraw";
     private user: IUser;
     private withdrawal: IBank = {} as IBank;
+    private toastRef = React.createRef<ToastRef>();
+
     constructor(props: IProps) {
         super(props);
         this.state = {
@@ -69,22 +68,65 @@ export default class WithdrawAccountScreen extends React.Component<IProps, IStat
 
         const vibrationPattern = [0, 5];
         Vibration.vibrate(vibrationPattern, false);
-        Toast.show({
-            type: 'success',
-            text1: 'Copied',
-            text2: 'copied user tag: ' + tagName,
-            text1Style: { fontSize: 16, fontFamily: 'AeonikBold' },
-            text2Style: { fontSize: 12, fontFamily: 'AeonikRegular' },
-        });
+        this.toastRef.current?.show("Copied user tag: " + tagName, "success");
     };
 
-    private localbanks = (code: string) => { }
 
     private fetchAccounts = async (): Promise<void> => {
         try {
             this.setState({ loadingAccounts: true });
+
+            await Defaults.IS_NETWORK_AVAILABLE();
+
+            const res = await fetch(`${Defaults.API}/bank/`, {
+                method: 'GET',
+                headers: {
+                    ...Defaults.HEADERS,
+                    'x-wealthx-handshake': this.session.client?.publicKey,
+                    'x-wealthx-deviceid': this.session.deviceid,
+                    'x-wealthx-devicename': this.session.devicename,
+                    Authorization: `Bearer ${this.session.authorization}`,
+                },
+            });
+
+            const data = await res.json();
+            if (data.status === "error") throw new Error(data.message || data.error);
+
+            if (data.status === "success") {
+                if (!data.handshake) throw new Error('Unable to process login response right now, please try again.');
+
+                // Decrypt data using Defaults.PARSE_DATA
+                if (this.session.client?.privateKey) {
+                    const parseData: Array<IBank> = Defaults.PARSE_DATA(data.data, this.session.client.privateKey, data.handshake);
+
+                    // Format parsed data for the list modal
+                    const formattedLists: Array<IList> = parseData.map((account) => {
+                        const bankInfo = banks.find((b) => b.code === account.bankCode);
+                        const logoUrl = (bankInfo && bankInfo.slug)
+                            ? `https://cdn.jsdelivr.net/gh/supermx1/nigerian-banks-api@main/logos/${bankInfo.slug}.png`
+                            : "http://wealthx.app/logo.png";
+
+                        return {
+                            name: account.accountName,
+                            description: `●●●●●●${account.accountNumber.slice(-4)} ${account.bankName.slice(0, 20)}${account.bankName.length > 20 ? "..." : ""}`,
+                            icon: logoUrl,
+                            id: account._id
+                        };
+                    });
+
+                    this.setState({ accounts: parseData, lists: formattedLists });
+                }
+            }
         } catch (error: any) {
             logger.log(error);
+            const errMsg: string = (error as Error).message || "An error occurred while fetching transactions.";
+            if (errMsg.trim() === "Session expired, please login") {
+                router.replace(this.session.user?.passkeyEnabled === true ? "/passkey" : '/onboarding/login');
+            } else {
+                logger.error("Error fetching transactions:", errMsg);
+            }
+            // Optionally show error toast
+            this.toastRef.current?.show(error.message || "Something went wrong", "error");
         } finally {
             this.setState({ loadingAccounts: false, });
         }
@@ -197,21 +239,55 @@ export default class WithdrawAccountScreen extends React.Component<IProps, IStat
                                     backgroundColor: '#F7F7F7',
                                 }}
                             >
-                                <ThemedText
-                                    style={{
-                                        fontSize: 14,
-                                        lineHeight: 16,
-                                        fontFamily: 'AeonikRegular',
-                                        color: '#757575',
-                                        fontWeight: '400',
-                                    }}
-                                >
-                                    {selected ? "******" + selected.accountNumber.slice(-4) + " " + selected.bankName : "Select bank account"}
-                                </ThemedText>
+                                {selected ? (
+                                    <ThemedView style={{ backgroundColor: 'transparent' }}>
+                                        <ThemedText
+                                            style={{
+                                                fontSize: 14,
+                                                lineHeight: 18,
+                                                fontFamily: 'AeonikMedium',
+                                                color: '#000000',
+                                                marginBottom: 4,
+                                                fontWeight: '500'
+                                            }}
+                                        >
+                                            {selected.accountName}
+                                        </ThemedText>
+                                        <ThemedText
+                                            style={{
+                                                fontSize: 12,
+                                                lineHeight: 14,
+                                                fontFamily: 'AeonikRegular',
+                                                color: '#757575',
+                                            }}
+                                        >
+                                            {`●●●●●●${selected.accountNumber.slice(-4)} ${selected.bankName.slice(0, 20)}${selected.bankName.length > 20 ? "..." : ""}`}
+                                        </ThemedText>
+                                    </ThemedView>
+                                ) : (
+                                        <ThemedText
+                                            style={{
+                                                fontSize: 14,
+                                                lineHeight: 16,
+                                                fontFamily: 'AeonikRegular',
+                                                color: '#757575',
+                                                fontWeight: '400',
+                                            }}
+                                        >
+                                            Select bank account
+                                        </ThemedText>
+                                )}
                             </Pressable>
                             <PrimaryButton
                                 Gradient
-                                onPress={async (): Promise<void> => { }}
+                                disabled={!selected}
+                                onPress={async (): Promise<void> => {
+                                    if (selected) {
+                                        this.session.params = { ...this.session.params, bank: selected };
+                                        await sessionManager.updateSession(this.session);
+                                        router.navigate("/withdraw/confirm");
+                                    }
+                                }}
                                 title={'Continue'} />
                         </ThemedView>
                     </ThemedView>
@@ -219,13 +295,14 @@ export default class WithdrawAccountScreen extends React.Component<IProps, IStat
                     <ListModal
                         visible={list_modal}
                         listChange={(list) => this.setState({ list_modal: false }, async () => {
-                            const account: IBank | undefined = this.state.accounts.find((acc: IBank) => acc.accountNumber === list.description);
+                            const account: IBank | undefined = this.state.accounts.find((acc: IBank) => acc._id === list.id);
                             this.setState({ selected: account });
                         })}
                         onClose={() => this.setState({ list_modal: !list_modal })}
                         lists={lists}
                         loading={loadingAccounts}
-                        showSearch={true} />
+                        showSearch={true}
+                    />
                     <MessageModal
                         visible={error_modal}
                         type={message_type || Status.ERROR}
@@ -235,8 +312,8 @@ export default class WithdrawAccountScreen extends React.Component<IProps, IStat
                             }
                         })}
                         message={{ title: error_title, description: error_message }} />
-                    <LoadingModal loading={loadingAccounts} />
                 </ThemedSafeArea>
+                <SimpleToast ref={this.toastRef} />
             </>
         );
     }

@@ -252,6 +252,7 @@ export interface INotification {
 }
 
 export interface IBank {
+    _id: string
     userId: string;
     accountNumber: string;
     bankName: string;
@@ -397,6 +398,7 @@ export interface IList {
     name: string;
     description: string;
     icon: string;
+    id?: string;
 }
 
 export interface IRegistration {
@@ -423,6 +425,12 @@ export interface IParams {
     amount?: string;
     swap?: ISwap;
     otp?: string;
+    bank?: IBank;
+    fromAsset?: IMarket;
+    toAsset?: IMarket;
+    fromValue?: string;
+    toValue?: string;
+    exchangeFee?: number;
 }
 
 export interface ILocation {

@@ -10,23 +10,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import React from "react";
-import sessionManager from "@/session/session";
-import { IUser, UserData } from "@/interface/interface";
-import { Platform, Pressable, StyleSheet, TextInput, Vibration } from "react-native";
-import logger from "@/logger/logger";
-import { router, Stack } from "expo-router";
-import { StatusBar } from "expo-status-bar";
+import BackButton from "@/components/button/back";
 import PrimaryButton from "@/components/button/primary";
 import LoadingModal from "@/components/modals/loading";
-import Defaults from "../default/default";
-import ThemedView from "@/components/ThemedView";
 import ThemedText from "@/components/ThemedText";
+import ThemedView from "@/components/ThemedView";
 import ThemedSafeArea from "@/components/ThemeSafeArea";
 import { Status } from "@/enums/enums";
+import { IUser, UserData } from "@/interface/interface";
+import logger from "@/logger/logger";
+import sessionManager from "@/session/session";
 import * as Clipboard from 'expo-clipboard';
 import { Image } from "expo-image";
-import BackButton from "@/components/button/back";
+import { router, Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import React from "react";
+import { Platform, Pressable, StyleSheet, TextInput, Vibration } from "react-native";
+import Defaults from "../default/default";
 
 interface IProps { }
 
@@ -182,7 +182,7 @@ export default class Activate2FAScreen extends React.Component<IProps, IState> {
                                             2FA Secret
                                         </ThemedText>
                                         <ThemedText style={styles.walletAddress}>
-                                            XXXX-XXXX-XXXX-XXXX
+                                            ●●●●● ●●●●● ●●●●● ●●●●●
                                         </ThemedText>
                                     </ThemedView>
                                     <Pressable style={styles.clearButton} onPress={this.copyToClipboard}>
@@ -200,13 +200,13 @@ export default class Activate2FAScreen extends React.Component<IProps, IState> {
                                         flexDirection: 'row',
                                     }}>
                                     <TextInput
-                                        placeholder={'Enter code from auth app'}
+                                        placeholder={'Enter 6-digit code from your authenticator app'}
                                         value={code}
                                         onChangeText={(text) => this.setState({ code: text })}
                                         editable={true}
                                         style={{
                                             flex: 1,
-                                            fontFamily: 'Aeonik-Medium',
+                                            fontFamily: 'AeonikRegular',
                                             fontSize: 14,
                                             color: 'black',
                                             paddingVertical: 16,
@@ -248,7 +248,6 @@ const styles = StyleSheet.create({
     },
     walletAddressLabel: {
         fontSize: 12,
-        fontFamily: 'Aeonik-Regular',
         color: '#757575',
         fontWeight: '400',
         lineHeight: 14,
@@ -257,7 +256,6 @@ const styles = StyleSheet.create({
         color: '#1F1F1F',
         fontSize: 16,
         lineHeight: 14,
-        fontFamily: 'Aeonik-Regular',
     },
     clearButton: {
         paddingHorizontal: 8,
@@ -270,6 +268,5 @@ const styles = StyleSheet.create({
         color: '#1F1F1F',
         fontSize: 12,
         lineHeight: 14,
-        fontFamily: 'Aeonik-Regular',
     },
 });

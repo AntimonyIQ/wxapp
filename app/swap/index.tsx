@@ -1,22 +1,22 @@
-import logger from '@/logger/logger';
-import { router, Stack } from 'expo-router';
-import React from 'react';
-import { IList, IMarket, IResponse, UserData } from '@/interface/interface';
-import { Appearance, ColorSchemeName, FlatList, Platform, StyleSheet, TouchableOpacity } from 'react-native';
-import sessionManager from '@/session/session';
-import { Colors } from '@/constants/Colors';
-import { Image } from 'expo-image';
-import MessageModal from '@/components/modals/message';
-import ListModal from '@/components/modals/list';
-import LoadingModal from '@/components/modals/loading';
-import SwapTextField from '@/components/inputs/swap';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import PrimaryButton from '@/components/button/primary';
-import { StatusBar } from 'expo-status-bar';
-import { BlockchainNetwork, Coin, Fiat, Status, WalletType } from '@/enums/enums';
+import DiapadKeyPad from '@/components/DiapadKeyPad';
+import SwapTextField from '@/components/inputs/swap';
+import ListModal from '@/components/modals/list';
+import MessageModal from '@/components/modals/message';
 import ThemedText from '@/components/ThemedText';
-import ThemedSafeArea from '@/components/ThemeSafeArea';
 import ThemedView from '@/components/ThemedView';
+import ThemedSafeArea from '@/components/ThemeSafeArea';
+import { getAssetLogoURI } from '@/data/assets';
+import { BlockchainNetwork, Coin, Fiat, Status, WalletType } from '@/enums/enums';
+import { IList, IMarket, IResponse, UserData } from '@/interface/interface';
+import logger from '@/logger/logger';
+import WalletService from '@/service/wallet';
+import sessionManager from '@/session/session';
+import { Image } from 'expo-image';
+import { router, Stack } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import React from 'react';
+import { ActivityIndicator, Platform, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import Defaults from '../default/default';
 
 interface SwapProps { }
@@ -24,7 +24,7 @@ interface SwapProps { }
 export enum interaction {
     from = "from",
     to = "to",
-};
+}
 
 interface SwapState {
     error_modal: boolean;
@@ -35,90 +35,230 @@ interface SwapState {
     whom: interaction;
     trade_modal: boolean;
     loading: boolean;
-    fee: number;
+    exchangeFee: number;
+    fromDollarEquivalent: number;
     fromValue: string;
     toValue: string;
     lists: Array<IList>;
+    countdownSeconds: number;
+    countdownActive: boolean;
+    continueBtnDisabled: boolean;
+    focusedInput: interaction;
 }
+
+const emptyMarket: IMarket = {
+    currency: Coin.BTC,
+    name: '',
+    categorie: WalletType.CRYPTO,
+    network: BlockchainNetwork.ETHEREUM,
+    address: '',
+    price: 0,
+    balance: 0,
+    balanceUsd: 0,
+    icon: '',
+    percent_change_24h: 0,
+    volume_change_24h: 0,
+    market_cap: 0,
+    active: false
+};
 
 export default class SwapScreen extends React.Component<SwapProps, SwapState> {
     private session: UserData = sessionManager.getUserData();
     private readonly title = "Swap Screen";
+    private estimateInterval: any | null = null;
+    private initTimeout: any | null = null;
+
     constructor(props: SwapProps) {
         super(props);
         this.state = {
             error_message: "",
             error_modal: false,
             error_title: "",
-            fromCurrency: {
-                currency: Coin.BTC,
-                name: '',
-                categorie: WalletType.CRYPTO,
-                network: BlockchainNetwork.ETHEREUM,
-                address: '',
-                price: 0,
-                balance: 0,
-                balanceUsd: 0,
-                icon: '',
-                percent_change_24h: 0,
-                volume_change_24h: 0,
-                market_cap: 0,
-                active: false
-            },
-            toCurrency: {
-                currency: Coin.BTC,
-                name: '',
-                categorie: WalletType.CRYPTO,
-                network: BlockchainNetwork.ETHEREUM,
-                address: '',
-                price: 0,
-                balance: 0,
-                balanceUsd: 0,
-                icon: '',
-                percent_change_24h: 0,
-                volume_change_24h: 0,
-                market_cap: 0,
-                active: false
-            },
+            fromCurrency: { ...emptyMarket },
+            toCurrency: { ...emptyMarket },
             whom: interaction.from,
             trade_modal: false,
             loading: false,
-            fee: 0,
+            exchangeFee: 0,
+            fromDollarEquivalent: 0,
             fromValue: "",
             toValue: "",
-            lists: []
+            lists: [],
+            countdownSeconds: 10,
+            countdownActive: false,
+            continueBtnDisabled: true,
+            focusedInput: interaction.from,
         };
         const login: boolean = Defaults.LOGIN_STATUS();
         if (!login) {
             logger.log("Session not found. Redirecting to login screen.");
             router.dismissTo(this.session.user?.passkeyEnabled === true ? "/passkey" : '/onboarding/login');
             return;
-        };
+        }
     }
 
     componentDidMount(): void {
         logger.clear();
-        this.local();
+        this.initTimeout = setTimeout(() => {
+            this.init();
+            this.startCountdownTimer();
+        }, 0);
     }
 
-    private local = (): void => {
+    componentWillUnmount(): void {
+        if (this.estimateInterval) {
+            clearInterval(this.estimateInterval);
+        }
+        if (this.initTimeout) {
+            clearTimeout(this.initTimeout);
+        }
+    }
+
+    // ── Init ──────────────────────────────────────────────────────────
+    private init = (): void => {
         const { currency, network } = this.session.params;
-        const toCurrency: IMarket = Defaults.FIND_MARKET(Fiat.NGN, BlockchainNetwork.NONE);
-        const fromCurrency: IMarket = Defaults.FIND_MARKET(currency, network);
+        const markets = WalletService.getUniqueMarkets();
 
-        const mkt: Array<IMarket> = Defaults.FILTER_MARKET(this.session.markets, [Coin.USDC, Coin.USDT]);
+        const toCurrencyParam = currency === "NGN" ? "USDT" : "NGN";
+        let fromMarket: IMarket | undefined = undefined;
 
-        const lists: Array<IList> = mkt.map((market, _index) => ({
+        // 1. Exact match with network
+        if (network) {
+            fromMarket = markets.find((m) => m.currency === currency && m.network === network);
+        }
+        // 2. BSC priority
+        if (!fromMarket) {
+            fromMarket = markets.find((m) => m.currency === currency && m.network === 'BSC');
+        }
+        // 3. Fallback
+        if (!fromMarket) {
+            fromMarket = markets.find((m) => m.currency === currency);
+        }
+
+        const toMarket = markets.find((m) => m.currency === toCurrencyParam);
+
+        if (!fromMarket || !toMarket) {
+            logger.error(`Error finding ${currency} wallet`);
+            return;
+        }
+
+        this.setState({ fromCurrency: fromMarket, toCurrency: toMarket });
+    }
+
+    // ── Countdown Timer ───────────────────────────────────────────────
+    private startCountdownTimer = () => {
+        this.setState({ countdownSeconds: 10, countdownActive: true });
+
+        if (this.estimateInterval) {
+            clearInterval(this.estimateInterval);
+        }
+
+        this.estimateInterval = setInterval(() => {
+            this.setState((prevState) => {
+                const newSeconds = prevState.countdownSeconds - 1;
+
+                if (newSeconds <= 0) {
+                    // Reset countdown and call estimate
+                    setTimeout(() => this.estimate(), 0);
+                    return { ...prevState, countdownSeconds: 10, countdownActive: true };
+                }
+
+                return { ...prevState, countdownSeconds: newSeconds };
+            });
+        }, 1000);
+    }
+
+    private resetCountdownTimer = () => {
+        this.setState({ countdownSeconds: 10, countdownActive: true });
+        // Restart the interval
+        this.startCountdownTimer();
+    }
+
+    // ── Toggle Currency Modal / Filtered Lists ────────────────────────
+    private toggleCurrencyModal = (isFromCurrency: boolean = true) => {
+        const uniqueMarkets = WalletService.getUniqueMarkets();
+        let filteredMarkets: IMarket[] = [];
+
+        if (isFromCurrency) {
+            // FROM: all crypto except NGN
+            filteredMarkets = uniqueMarkets.filter(market => market.currency !== Fiat.NGN);
+        } else {
+            // TO: only stablecoins + NGN
+            const allowedToCurrencies = ["USDT", "USDC", "BUSD", "NGN"];
+            filteredMarkets = uniqueMarkets.filter(market => allowedToCurrencies.includes(market.currency));
+        }
+
+        const lists: Array<IList> = filteredMarkets.map((market) => ({
             name: market.name,
             description: market.currency,
-            icon: market.icon,
-        }));
+            icon: getAssetLogoURI(market.currency) || market.icon,
+            market: market
+        } as any));
 
-        this.setState({ toCurrency: toCurrency, fromCurrency: fromCurrency, lists });
+        this.setState({
+            lists,
+            whom: isFromCurrency ? interaction.from : interaction.to,
+            trade_modal: true,
+        });
     }
 
+    // ── Format Money ──────────────────────────────────────────────────
+    private formatToMoneyString = (money: number = 0): string => {
+        return money.toLocaleString(undefined, {
+            minimumFractionDigits: Defaults.MIN_DECIMAL,
+            maximumFractionDigits: Defaults.MAX_DECIMAL,
+        });
+    }
+
+    // ── Format Balance Display ────────────────────────────────────────
+    // USDT, USDC, BUSD, NGN → max 2 decimals, money-like format
+    // All others → use Defaults.MIN_DECIMAL / MAX_DECIMAL
+    private static readonly TWO_DECIMAL_CURRENCIES = ["USDT", "USDC", "BUSD", "NGN"];
+
+    private formatBalanceDisplay = (asset: IMarket): string => {
+        if (SwapScreen.TWO_DECIMAL_CURRENCIES.includes(asset.currency)) {
+            return asset.balance.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            });
+        }
+        return this.formatToMoneyString(asset.balance);
+    }
+
+    // ── Cap decimals for stablecoins input ────────────────────────────
+    // USDT, USDC, BUSD → max 2 decimal places when typing
+    private capDecimalsIfNeeded = (text: string, currency: string): string => {
+        if (!SwapScreen.TWO_DECIMAL_CURRENCIES.includes(currency) || currency === "NGN") return text;
+        const dotIndex = text.indexOf('.');
+        if (dotIndex === -1) return text;
+        // Allow only 2 digits after the dot
+        const decimals = text.substring(dotIndex + 1);
+        if (decimals.length > 2) {
+            return text.substring(0, dotIndex + 3);
+        }
+        return text;
+    }
+
+    // ── Estimate ──────────────────────────────────────────────────────
     private estimate = async () => {
         try {
+            const { fromCurrency, toCurrency, focusedInput, fromValue, toValue } = this.state;
+            const isFrom = focusedInput === interaction.from;
+
+            // Guards matching legacy exactly
+            if (!fromValue && !toValue) {
+                this.setState({ continueBtnDisabled: true, loading: false });
+                return;
+            }
+            if (isFrom && (!fromValue || Number(fromValue) === 0)) {
+                this.setState({ continueBtnDisabled: true, loading: false });
+                return;
+            }
+            if (!isFrom && (!toValue || Number(toValue) === 0)) {
+                this.setState({ continueBtnDisabled: true, loading: false });
+                return;
+            }
+
             this.setState({ loading: true });
             await Defaults.IS_NETWORK_AVAILABLE();
 
@@ -127,9 +267,7 @@ export default class SwapScreen extends React.Component<SwapProps, SwapState> {
                 logger.log("Session not found. Redirecting to login screen.");
                 router.dismissTo(this.session.user?.passkeyEnabled === true ? "/passkey" : '/onboarding/login');
                 return;
-            };
-
-            const { fromCurrency, toCurrency, whom, fromValue, toValue } = this.state;
+            }
 
             const res = await fetch(`${Defaults.API}/wallet/swap/estimate`, {
                 method: 'POST',
@@ -144,7 +282,7 @@ export default class SwapScreen extends React.Component<SwapProps, SwapState> {
                     toCurrency: toCurrency.currency,
                     fromValue,
                     toValue,
-                    isFrom: whom === interaction.from ? true : false,
+                    isFrom,
                 }),
             });
 
@@ -158,92 +296,217 @@ export default class SwapScreen extends React.Component<SwapProps, SwapState> {
                 this.setState({
                     toValue: String(Number(parseData.toValue).toFixed(2)),
                     fromValue: String(parseData.fromValue),
+                    loading: false,
+                    continueBtnDisabled: false,
+                    exchangeFee: parseData.fee || 0,
+                    fromDollarEquivalent: parseData.fromDollarEquivalent || 0,
                 });
-            };
-
+            }
         } catch (error: any) {
             if (error.response) {
-                const data = error.response.data;
-                logger.log("Error Response Data:", data);
+                logger.log("Error Response Data:", error.response.data);
             } else if (error.request) {
                 logger.log("No Response Received:", error.request);
             } else {
                 logger.log("Error:", error.message);
             }
-        } finally {
             this.setState({ loading: false });
         }
     };
 
-    private handleTextChanged = (text: string) => {
-        const { whom } = this.state;
-        whom === interaction.from
-            ? this.setState({ fromValue: text })
-            : this.setState({ toValue: text });
-
-        this.estimate();
-    };
-
-    private processSelectedTrade = (list: IList) => {
-        const { fromCurrency, toCurrency, whom } = this.state;
-        if (whom === interaction.from && list.description === toCurrency.currency) return;
-        if (whom === interaction.to && list.description === fromCurrency.currency) return;
-        if (whom === interaction.from && list.description === fromCurrency.currency) return;
-        if (whom === interaction.to && list.description === toCurrency.currency) return;
-        if (whom === interaction.from) {
-            const fromCurrency: IMarket = Defaults.FIND_MARKET(list.description as Coin);
-            this.setState({ fromCurrency: fromCurrency, trade_modal: false, fromValue: "", toValue: "" });
+    // ── Handle Text Change ────────────────────────────────────────────
+    private handleTextChange = (text: string, isFromCurrency: boolean = true) => {
+        // Cap decimals for stablecoins (USDT, USDC, BUSD) on FROM input
+        let processedText = text;
+        if (isFromCurrency) {
+            processedText = this.capDecimalsIfNeeded(text, this.state.fromCurrency.currency);
+            this.setState({ fromValue: processedText });
         } else {
-            const toCurrency: IMarket = Defaults.FIND_MARKET(list.description as Coin);
-            this.setState({ toCurrency: toCurrency, trade_modal: false, fromValue: "", toValue: "" });
+            this.setState({ toValue: processedText });
         }
+
+        // Enable/disable continue button based on input
+        this.setState((currentState) => {
+            const newFromValue = isFromCurrency ? processedText : currentState.fromValue;
+            const newToValue = isFromCurrency ? currentState.toValue : processedText;
+
+            const hasValidValues = newFromValue && newToValue &&
+                Number(newFromValue) > 0 && Number(newToValue) > 0;
+
+            return { continueBtnDisabled: !hasValidValues };
+        });
+
+        // Reset timer when user changes input
+        this.resetCountdownTimer();
     }
 
-    private renderKeypadItem = ({ item }: { item: any }): React.JSX.Element => (
-        <TouchableOpacity
-            style={styles.box}
-            onPress={() => {
-                let currentValue = this.state.whom === interaction.from ? this.state.fromValue : this.state.toValue;
-                if (item === 'Backspace') {
-                    currentValue = currentValue.slice(0, -1);
+    // ── Change Currency (with isSameCurrency auto-swap) ───────────────
+    private changeCurrency = (list: any) => {
+        const { fromCurrency, toCurrency, whom } = this.state;
+        const allowedToCurrencies = ["USDT", "USDC", "BUSD", "NGN"];
+        const isSelectingFromCurrency = whom === interaction.from;
 
-                    if (currentValue.length === 0) {
-                        logger.log("currentValue length: ", currentValue.length);
-                        this.setState({ fromValue: "", toValue: "" });
-                        return;
-                    }
+        // Use the market object directly from the list item if available
+        const currency: IMarket = list.market || Defaults.FIND_MARKET(list.description as Coin);
+
+        const isSameCurrency = currency.currency === (isSelectingFromCurrency ? toCurrency.currency : fromCurrency.currency);
+
+        let newState: Partial<SwapState> = {
+            fromValue: '',
+            toValue: '',
+            trade_modal: false,
+        };
+
+        if (isSelectingFromCurrency) {
+            newState.fromCurrency = currency;
+
+            if (isSameCurrency) {
+                // If the old fromCurrency is an allowed TO currency, swap them
+                if (allowedToCurrencies.includes(fromCurrency.currency)) {
+                    newState.toCurrency = fromCurrency;
                 } else {
-                    currentValue += item;
+                    // Find a new TO currency that isn't the same as selected
+                    const markets = WalletService.getUniqueMarkets();
+                    const availableTo = allowedToCurrencies.filter(c => c !== currency.currency);
+                    const newToAsset = markets.find(m => availableTo.includes(m.currency) && m.network === 'BSC')
+                        || markets.find(m => availableTo.includes(m.currency));
+                    if (newToAsset) {
+                        newState.toCurrency = newToAsset;
+                    }
                 }
-                this.handleTextChanged(currentValue);
-            }}>
-            {item === 'Backspace'
-                ? <MaterialCommunityIcons name="backspace" size={24} color="red" />
-                : <ThemedText style={styles.buttonText}>{item}</ThemedText>}
-        </TouchableOpacity>
-    );
+            }
+        } else {
+            newState.toCurrency = currency;
 
-    private next = async () => {
-        try {
-
-            router.navigate("/swap/confirm");
-        } catch (error: any) {
-            logger.error(error.message || error);
-            this.setState({ error_modal: true, error_title: "Swap Error", error_message: error.message });
+            if (isSameCurrency) {
+                if (toCurrency.currency !== "NGN") {
+                    newState.fromCurrency = toCurrency;
+                } else {
+                    const markets = WalletService.getUniqueMarkets();
+                    const newFromAsset = markets.find(m => m.currency !== "NGN" && m.currency !== currency.currency);
+                    if (newFromAsset) {
+                        newState.fromCurrency = newFromAsset;
+                    }
+                }
+            }
         }
-    };
 
-    private toggleRouting = () => {
-        const { fromCurrency, toCurrency } = this.state;
-        this.setState({ fromCurrency: toCurrency, toCurrency: fromCurrency, toValue: "", fromValue: "" });
+        this.setState(newState as any);
+        this.resetCountdownTimer();
     }
 
+    // ── Input Number (keypad) ─────────────────────────────────────────
+    private inputNumber = (number: string | number) => {
+        const { fromValue } = this.state;
+        // Always target FROM input only — TO is read-only
+        const newValue = fromValue + number;
+        this.handleTextChange(newValue, true);
+    }
+
+    // ── Handle Backspace ──────────────────────────────────────────────
+    private handleBackspace = () => {
+        const fromValue = String(this.state.fromValue || "0");
+
+        // Always target FROM input only — TO is read-only
+        const newValue = fromValue.length > 1 ? fromValue.slice(0, -1) : "";
+        this.setState({ fromValue: newValue, toValue: "" });
+        if (fromValue.length > 1) {
+            this.handleTextChange(newValue, true);
+        }
+    }
+
+    // ── Handle Navigation (Continue) ──────────────────────────────────
+    private handleNavigation = async () => {
+        const { fromCurrency, toCurrency, fromValue, toValue } = this.state;
+        const allowedToCurrencies = ["USDT", "USDC", "BUSD", "NGN"];
+
+        if (fromCurrency.currency === toCurrency.currency) {
+            this.setState({ error_modal: true, error_title: "Swap Error", error_message: "You cannot swap the same currency" });
+            return;
+        }
+
+        if (fromCurrency.currency === "NGN") {
+            this.setState({ error_modal: true, error_title: "Swap Error", error_message: "Unsupported swap currency" });
+            return;
+        }
+
+        if (!allowedToCurrencies.includes(toCurrency.currency)) {
+            this.setState({ error_modal: true, error_title: "Swap Error", error_message: "Unsupported swap currency" });
+            return;
+        }
+
+        if (!fromValue || !toValue) {
+            this.setState({ error_modal: true, error_title: "Swap Error", error_message: "Please enter a valid amount to swap" });
+            return;
+        }
+
+        if (fromCurrency.balance < Number(fromValue)) {
+            this.setState({ error_modal: true, error_title: "Swap Error", error_message: `Insufficient ${fromCurrency.currency} balance to continue swap` });
+            return;
+        }
+
+        // Clear interval before navigating
+        if (this.estimateInterval) {
+            clearInterval(this.estimateInterval);
+        }
+
+        const { exchangeFee } = this.state;
+
+        // Update session params with the swap details so confirm screen can read them
+        await sessionManager.updateSession({
+            ...this.session,
+            params: {
+                ...this.session.params,
+                fromAsset: fromCurrency,
+                toAsset: toCurrency,
+                fromValue,
+                toValue,
+                exchangeFee,
+            }
+        });
+
+        router.navigate("/swap/confirm");
+    }
+
+    // ── Handle Toggle Switch Swap ─────────────────────────────────────
+    private handleToggleSwitchSwap = () => {
+        const { fromCurrency, toCurrency } = this.state;
+
+        // Ensure FROM is never NGN
+        if (fromCurrency.currency === "NGN" || toCurrency.currency === "NGN") {
+            this.setState({
+                error_modal: true,
+                error_title: "Swap Error",
+                error_message: `Swap from ${toCurrency.currency} to ${fromCurrency.currency} currently not supported`,
+            });
+            return;
+        }
+
+        this.setState({
+            fromCurrency: toCurrency,
+            toCurrency: fromCurrency,
+            fromValue: '',
+            toValue: '',
+        });
+
+        this.resetCountdownTimer();
+    }
+
+    // ── Render ────────────────────────────────────────────────────────
     render(): React.ReactNode {
-        const { error_message, lists, error_modal, error_title, fromValue, toValue, trade_modal, loading, fromCurrency, toCurrency } = this.state;
+        const {
+            error_message, error_modal, error_title,
+            fromValue, toValue, trade_modal, loading,
+            fromCurrency, toCurrency, lists,
+            exchangeFee, fromDollarEquivalent,
+            continueBtnDisabled, countdownSeconds,
+        } = this.state;
+
         return (
             <>
                 <Stack.Screen options={{ title: this.title, headerShown: false }} />
                 <ThemedSafeArea style={styles.safeArea}>
+                    {/* ── Header ─────────────────────────────────────── */}
                     <ThemedView style={styles.header}>
                         <TouchableOpacity
                             style={styles.backButton}
@@ -255,30 +518,49 @@ export default class SwapScreen extends React.Component<SwapProps, SwapState> {
                             <ThemedText style={styles.backText}>Back</ThemedText>
                         </TouchableOpacity>
                         <ThemedText style={styles.title}>Swap</ThemedText>
-                        <ThemedView></ThemedView>
+                        <TouchableOpacity style={[styles.backButton, styles.extraButton]} onPress={this.resetCountdownTimer}>
+                            <ThemedView style={styles.countdownContainer}>
+                                <ThemedView style={styles.countdownCircle}>
+                                    <ThemedText style={[styles.countdownText, {
+                                        color: countdownSeconds <= 3 ? '#FF6B6B' : countdownSeconds <= 6 ? '#FFB347' : '#283fa5ff'
+                                    }]}>
+                                        {countdownSeconds}
+                                    </ThemedText>
+                                </ThemedView>
+                                <ThemedView style={styles.countdownLabels}>
+                                    <ThemedText style={styles.countdownLabel}>Reset</ThemedText>
+                                </ThemedView>
+                            </ThemedView>
+                        </TouchableOpacity>
                     </ThemedView>
 
-                    <ThemedView style={styles.content}>
+                    {/* ── Content ─────────────────────────────────────── */}
+                    <ScrollView
+                        style={styles.content}
+                        contentContainerStyle={{ paddingBottom: Platform.OS === 'android' ? 450 : 100 }}
+                        showsVerticalScrollIndicator={false}
+                    >
                         <ThemedView>
-
+                            {/* FROM Input */}
                             <SwapTextField
-                                onChangeCoin={(): void => this.setState({ whom: interaction.from, trade_modal: !trade_modal })}
-                                onMaxPress={(): void => this.setState({ whom: interaction.from }, () => {
-                                    this.handleTextChanged(fromCurrency.balance.toString());
-                                })}
+                                onChangeCoin={(): void => this.toggleCurrencyModal(true)}
+                                onMaxPress={(): void => this.handleTextChange(fromCurrency.balance.toString(), true)}
                                 asset={fromCurrency}
-                                onChangeText={this.handleTextChanged}
+                                onChangeText={(text: string) => this.handleTextChange(text, true)}
                                 value={fromValue}
-                                onFocus={(e): void => this.setState({ whom: interaction.from })}
-                                readOnly={false} />
+                                onFocus={(): void => this.setState({ focusedInput: interaction.from, fromValue: '', toValue: '' })}
+                                readOnly={false}
+                                balanceDisplay={this.formatBalanceDisplay(fromCurrency)} />
 
-                            <TouchableOpacity onPress={this.toggleRouting}>
+                            {/* Center swap button (disabled, shows spinner when loading) */}
+                            <TouchableOpacity disabled={true} onPress={this.handleToggleSwitchSwap}>
                                 <ThemedView style={{
                                     width: "100%",
                                     flexDirection: "row",
                                     alignItems: "center",
                                     justifyContent: "center",
                                     paddingVertical: 5,
+                                    opacity: 0.5
                                 }}>
                                     <ThemedView style={{
                                         width: 30,
@@ -289,52 +571,72 @@ export default class SwapScreen extends React.Component<SwapProps, SwapState> {
                                         alignItems: "center",
                                         justifyContent: "center",
                                     }}>
-                                        <Image
-                                            source={require("../../assets/icons/swap.svg")}
-                                            style={{ width: 25, height: 25 }}
-                                            transition={500}
-                                            tintColor={"#000"} />
+                                        {loading ? (
+                                            <ActivityIndicator size={10} color="#000000" />
+                                        ) : (
+                                                <Image
+                                                    source={require("../../assets/icons/swap.svg")}
+                                                    style={{ width: 25, height: 25 }}
+                                                    transition={500}
+                                                    tintColor={"#000"} />
+                                        )}
                                     </ThemedView>
                                 </ThemedView>
                             </TouchableOpacity>
 
+                            {/* TO Input */}
                             <SwapTextField
-                                onChangeCoin={(): void => this.setState({ whom: interaction.to, trade_modal: !trade_modal })}
-                                onMaxPress={(): void => this.setState({ whom: interaction.to }, () => {
-                                    this.handleTextChanged(toCurrency.balance.toString());
-                                })}
+                                onChangeCoin={(): void => this.toggleCurrencyModal(false)}
+                                onMaxPress={(): void => { }}
                                 asset={toCurrency}
-                                onChangeText={this.handleTextChanged}
+                                onChangeText={(): void => { }}
                                 value={toValue}
-                                onFocus={(): void => this.setState({ whom: interaction.to })}
-                                readOnly={false} />
+                                onFocus={(): void => { }}
+                                readOnly={true}
+                                balanceDisplay={this.formatBalanceDisplay(toCurrency)} />
                         </ThemedView>
 
-                        <PrimaryButton Gradient title='Continue' onPress={this.next}></PrimaryButton>
-                    </ThemedView>
+                        {/* ── Info Container ─────────────────────────── */}
+                        <ThemedView style={styles.infoContainer}>
+                            <ThemedView style={styles.infoRow}>
+                                <ThemedText style={styles.infoLabel}>Exchange fees</ThemedText>
+                                <ThemedText style={styles.infoValue}>
+                                    {this.formatToMoneyString(exchangeFee)} {fromCurrency.currency} (~${this.formatToMoneyString(fromDollarEquivalent)})
+                                </ThemedText>
+                            </ThemedView>
+                            <PrimaryButton
+                                Gold
+                                title='Preview'
+                                onPress={this.estimate}
+                                disabled={loading}
+                            />
+                        </ThemedView>
+                    </ScrollView>
 
-                    <ThemedView style={styles.keypadContainer}>
-                        <FlatList
-                            data={[1, 2, 3, 4, 5, 6, 7, 8, 9, '.', 0, 'Backspace']}
-                            renderItem={this.renderKeypadItem}
-                            keyExtractor={(item, index) => index.toString()}
-                            numColumns={3}
-                            contentContainerStyle={styles.keypad}
-                            style={{ paddingBottom: 20 }}
-                        />
-                    </ThemedView>
+                    {/* ── Keypad ──────────────────────────────────────── */}
+                    <DiapadKeyPad
+                        button={!loading}
+                        btndisabled={continueBtnDisabled}
+                        inputNumber={this.inputNumber}
+                        onBackspacePress={this.handleBackspace}
+                        onContinuePress={this.handleNavigation}
+                    />
 
-                    <ListModal
-                        visible={trade_modal}
-                        lists={lists}
-                        listChange={this.processSelectedTrade}
-                        onClose={() => this.setState({ trade_modal: !trade_modal })} />
+                    {/* ── Modals ──────────────────────────────────────── */}
+                    {trade_modal && (
+                        <ListModal
+                            visible={trade_modal}
+                            title={this.state.whom === interaction.from ? "Select From Asset" : "Select To Asset"}
+                            lists={lists}
+                            listChange={this.changeCurrency}
+                            showSearch={true}
+                            onClose={() => this.setState({ trade_modal: false })} />
+                    )}
                     <MessageModal
                         visible={error_modal}
                         type={Status.ERROR}
                         onClose={(): void => this.setState({ error_modal: !error_modal })}
                         message={{ title: error_title, description: error_message }} />
-                    <LoadingModal loading={loading} />
                     <StatusBar style={"dark"} />
                 </ThemedSafeArea>
             </>
@@ -345,7 +647,7 @@ export default class SwapScreen extends React.Component<SwapProps, SwapState> {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        paddingVertical: Platform.OS === 'android' ? 50 : Platform.OS === "web" ? 20 : 0,
+        paddingTop: Platform.OS === 'android' ? 50 : 0,
     },
     header: {
         flexDirection: 'row',
@@ -368,22 +670,53 @@ const styles = StyleSheet.create({
     backText: {
         fontFamily: 'AeonikRegular',
         fontSize: 12,
+        fontWeight: '500',
         lineHeight: 14,
     },
     title: {
         fontSize: 16,
+        fontWeight: 'bold',
     },
     extraButton: {
         backgroundColor: 'white',
+        paddingRight: 0,
     },
-    placeholderIcon: {
-        width: 24,
-        height: 24,
+    countdownContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        backgroundColor: 'transparent',
+    },
+    countdownCircle: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        borderWidth: 2,
+        borderColor: '#283fa5ff',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 6,
+        backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    },
+    countdownText: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        fontFamily: 'AeonikBold',
+    },
+    countdownLabels: {
+        alignItems: 'flex-start',
+        backgroundColor: 'transparent',
+    },
+    countdownLabel: {
+        fontSize: 10,
+        fontWeight: '600',
+        fontFamily: 'AeonikMedium',
+        lineHeight: 12,
     },
     content: {
         marginTop: 26,
         marginHorizontal: 16,
-        gap: 30
     },
     infoContainer: {
         padding: 12,
@@ -391,40 +724,18 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         marginTop: 20,
     },
-    swapButton: {
-        // backgroundColor: Colors.primary,
-        borderRadius: 8,
-        paddingVertical: 16,
-        alignItems: 'center',
-        marginTop: 20,
-        marginHorizontal: 16,
+    infoRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 15,
+        backgroundColor: 'transparent',
     },
-    swapButtonText: {
-        color: 'white',
-        fontWeight: 'bold',
-        fontSize: 16,
+    infoLabel: {
+        fontSize: 13,
+        fontFamily: 'AeonikRegular',
     },
-    box: {
-        width: 90,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginHorizontal: 20,
-        marginVertical: 15,
-        borderRadius: 10,
-    },
-    buttonText: {
-        fontSize: 32,
-        lineHeight: 32,
+    infoValue: {
+        fontSize: 13,
         fontFamily: 'AeonikMedium',
-    },
-    keypadContainer: {
-        width: '100%',
-        alignItems: 'center',
-        position: 'absolute',
-        bottom: 20,
-    },
-    keypad: {
-        justifyContent: 'center',
-        alignItems: 'center',
     },
 });

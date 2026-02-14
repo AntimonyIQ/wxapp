@@ -186,6 +186,7 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         elevation: 5,
         marginBottom: 20,
+        backgroundColor: "#FFF"
     },
     header: {
         flexDirection: 'row',

@@ -10,23 +10,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import React from "react";
-import sessionManager from "@/session/session";
-import { IBankList, IResponse, UserData } from "@/interface/interface";
-import logger from "@/logger/logger";
-import { router, Stack } from "expo-router";
-import { Platform, Pressable, StyleSheet } from "react-native";
-import { IList } from "@/interface/interface";
-import Defaults from "../default/default";
-import { LinearGradient } from "expo-linear-gradient";
-import { Image } from "expo-image";
 import PrimaryButton from "@/components/button/primary";
 import TextField from "@/components/inputs/text";
 import ListModal from "@/components/modals/list";
 import LoadingModal from "@/components/modals/loading";
-import ThemedSafeArea from "@/components/ThemeSafeArea";
-import ThemedView from "@/components/ThemedView";
 import ThemedText from "@/components/ThemedText";
+import ThemedView from "@/components/ThemedView";
+import ThemedSafeArea from "@/components/ThemeSafeArea";
+import { IBankList, IList, IResponse, UserData } from "@/interface/interface";
+import logger from "@/logger/logger";
+import sessionManager from "@/session/session";
+import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
+import { router, Stack } from "expo-router";
+import React from "react";
+import { Platform, Pressable, StyleSheet, View } from "react-native";
+import Defaults from "../default/default";
+import WalletService from "@/service/wallet";
 
 interface IProps { }
 
@@ -106,6 +106,7 @@ export default class PaymentAddScreen extends React.Component<IProps, IState> {
             if (data.status === "error") throw new Error(data.message || data.error);
             if (data.status === "success") {
                 Defaults.TOAST('Bank Account Added successfully', 'Connect Bank', "success");
+                await WalletService.fetchWalletData({ force: true, showLoading: false });
                 router.navigate('/dashboard');
             }
 
@@ -291,18 +292,20 @@ export default class PaymentAddScreen extends React.Component<IProps, IState> {
                                     </ThemedText>
                                 </ThemedView>
 
-                                <TextField
-                                    placeholder='Select Bank'
-                                    showText={true}
-                                    title="Select Bank"
-                                    maxLength={300}
-                                    textValue={selectedBank.name}
-                                    onChangeText={(text) => this.setState({ list_modal: false }, async () => {
-                                        await this.handleAccountResolve();
-                                    })}
-                                    showPasteButton={false}
-                                    onFocus={() => this.setState({ list_modal: true })}
-                                />
+                                <Pressable onPress={() => this.setState({ list_modal: true })}>
+                                    <View pointerEvents="none">
+                                        <TextField
+                                            placeholder='Select Bank'
+                                            showText={true}
+                                            title="Select Bank"
+                                            maxLength={300}
+                                            textValue={selectedBank.name}
+                                            onChangeText={() => { }}
+                                            readonly={true}
+                                            showPasteButton={false}
+                                        />
+                                    </View>
+                                </Pressable>
 
                                 <TextField
                                     placeholder='Add Account Number'
@@ -330,12 +333,14 @@ export default class PaymentAddScreen extends React.Component<IProps, IState> {
                             </ThemedView>
                         </ThemedView>
                     </ThemedView>
-                    <ListModal
+                    {list_modal && <ListModal
                         visible={list_modal}
-                        listChange={(list) => this.setState({ selectedBank: list, list_modal: false })}
-                        onClose={() => this.setState({ list_modal: !list_modal })}
+                        listChange={(list) => this.setState({ selectedBank: list, list_modal: false }, async () => {
+                            await this.handleAccountResolve();
+                        })}
+                        onClose={() => this.setState({ list_modal: false })}
                         lists={lists}
-                        showSearch={true} />
+                        showSearch={true} />}
                     <LoadingModal loading={loading} />
                 </ThemedSafeArea>
             </>

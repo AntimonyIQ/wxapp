@@ -242,6 +242,19 @@ class WalletService {
         callback(this.hideBalance);
         return () => this.off('hideBalanceChanged', callback);
     }
+
+    public getUniqueMarkets(): IMarket[] {
+        const uniqueMarketsMap = new Map<string, IMarket>();
+        this.markets.forEach((market) => {
+            const existing = uniqueMarketsMap.get(market.currency);
+            if (!existing) {
+                uniqueMarketsMap.set(market.currency, market);
+            } else if (market.network === 'BSC') {
+                uniqueMarketsMap.set(market.currency, market);
+            }
+        });
+        return Array.from(uniqueMarketsMap.values());
+    }
 }
 
 export default new WalletService();

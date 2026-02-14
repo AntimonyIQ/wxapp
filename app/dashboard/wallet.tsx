@@ -14,11 +14,10 @@ import ThemedSafeArea from "@/components/ThemeSafeArea";
 import ThemedText from "@/components/ThemedText";
 import ThemedView from "@/components/ThemedView";
 import WalletShimmer from "@/components/WalletShimmer";
-import MarketCard from "@/components/card/market";
 import ListModal from "@/components/modals/list";
 import SimpleToast, { ToastRef } from '@/components/toast/toast';
 import { Colors } from "@/constants/Colors";
-import { BlockchainNetwork } from "@/enums/enums";
+import { getAssetLogoURI } from "@/data/assets";
 import { IMarket, IParams, UserData } from "@/interface/interface";
 import logger from "@/logger/logger";
 import WalletService, { IWalletData } from "@/service/wallet";
@@ -26,10 +25,9 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React from "react";
-import { Image, ImageBackground, Platform, Pressable, RefreshControl, ScrollView, StyleSheet } from "react-native";
+import { FlatList, Image, ImageBackground, Platform, Pressable, RefreshControl, StyleSheet } from "react-native";
 import sessionManager from "../../session/session";
 import Defaults from "../default/default";
-import { getAssetLogoURI } from "@/data/assets";
 
 interface IProps { }
 
@@ -168,6 +166,9 @@ export default class WalletScreen extends React.Component<IProps, IState> {
 
     render(): React.ReactNode {
         const { hideBalance, marketsLoading, markets, refreshing, totalBalanceUsd } = this.state;
+
+        const uniqueMarkets = WalletService.getUniqueMarkets();
+
         return (
             <>
                 <Stack.Screen options={{ title: 'Wallet', headerShown: false }} />
@@ -217,54 +218,129 @@ export default class WalletScreen extends React.Component<IProps, IState> {
                         </ThemedView>
 
                         <ThemedView style={styles.marketplaceContainer}>
-                            <Pressable style={styles.marketplaceLink}>
-                                <ThemedText style={styles.marketplaceText}>Market Place</ThemedText>
+                            <Pressable style={[styles.marketplaceLink, { paddingHorizontal: 20 }]}>
+                                <ThemedText style={styles.marketplaceText}>Your Assets</ThemedText>
                             </Pressable>
                             {marketsLoading && (
                                 <WalletShimmer />
                             )}
                             {!marketsLoading && markets.length === 0 &&
                                 <ThemedView
-                                    style={{ borderRadius: 8, backgroundColor: "#F5F5F5", height: 500, display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
+                                    style={{ borderRadius: 8, backgroundColor: "#F5F5F5", height: 500, display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "center", marginHorizontal: 20 }}>
                                     <ThemedText style={{ fontFamily: 'AeonikRegular', lineHeight: 16, fontSize: 16 }}>No markets available.</ThemedText>
                                 </ThemedView>
                             }
                             {!marketsLoading &&
-                                <ScrollView
+                                <FlatList
+                                    data={uniqueMarkets}
+                                    keyExtractor={(asset, index) => `${asset.currency}-${index}`}
                                     refreshControl={
                                         <RefreshControl
                                             refreshing={refreshing}
                                             onRefresh={this.onRefresh}
                                         />
                                     }
-                                    style={styles.transactionHistoryContainer}>
-                                    {markets.length > 0 && markets.map((asset, index) => {
-                                        // Priority to BSC balance
-                                        const bscAsset = markets.find(m => m.currency === asset.currency && m.network === BlockchainNetwork.BSC);
-                                        const displayAsset = bscAsset || asset;
-
-                                        return (
-                                            <MarketCard
+                                contentContainerStyle={{
+                                    // padding: 18, // Removed general padding to allow border to span full width if needed, but usually list items have padding inside or container has padding.
+                                    // Figma "width 298" implies some inset. Let's keep container padding but remove gap.
+                                    paddingHorizontal: 18,
+                                    paddingBottom: 100, // Ensure content isn't cut off at bottom
+                                    flexGrow: 1, // Ensures content can stretch
+                                }}
+                                showsVerticalScrollIndicator={false}
+                                style={styles.transactionHistoryContainer}
+                                renderItem={({ item: asset, index }) => {
+                                    const logoURI = getAssetLogoURI(asset.currency) || asset.icon;
+                                    const balanceAmount = (asset.balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 });
+                                    const balanceInUsd = asset.balanceUsd.toLocaleString(undefined, { maximumFractionDigits: 2 });
+                                    const percent = Number(asset.percent_change_24h.toFixed(2));
+                                    const isPositive = percent >= 0; return (
+                                        <Pressable
                                                 key={index}
-                                                hideBalance={hideBalance}
-                                                market={{
-                                                    key: String(asset.address),
-                                                    icon: getAssetLogoURI(asset.currency) || asset.icon,
-                                                    wallet: true,
-                                                    header: asset.name,
-                                                    subHead: asset.currency,
-                                                    price: asset.price.toLocaleString(),
-                                                    percentage: Number(asset.percent_change_24h.toFixed(2)),
-                                                    balanceAmount: (displayAsset.balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 }), // Actual balance
-                                                    balanceInUsd: String(displayAsset.balanceUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })),
-                                                    isToken: asset.isToken,
-                                                    networkLogoURI: asset.networkLogoURI
+                                            style={{
+                                                flexDirection: 'row',
+                                                justifyContent: 'space-between',
+                                                alignItems: 'center',
+                                                paddingVertical: 12,
+                                                borderBottomWidth: 1,
+                                                borderBottomColor: '#F3F4F6',
+                                                backgroundColor: '#FFFFFF',
+                                                height: 60,
                                                 }}
                                                 onPress={() => this.handleSelectedCoin(asset)}
-                                            />
+                                        >
+                                            {/* Left Side */}
+                                            <ThemedView style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                                                {/* Icon */}
+                                                <ThemedView style={{ width: 32, height: 32 }}>
+                                                    <Image
+                                                        source={{ uri: logoURI }}
+                                                        style={{ width: 32, height: 32, borderRadius: 16 }}
+                                                    />
+                                                    {asset.isToken && asset.networkLogoURI && (
+                                                        <Image
+                                                            source={{ uri: asset.networkLogoURI }}
+                                                            style={{
+                                                                width: 14,
+                                                                height: 14,
+                                                                borderRadius: 7,
+                                                                position: 'absolute',
+                                                                right: -2,
+                                                                bottom: 0,
+                                                                backgroundColor: '#FFFFFF',
+                                                                borderWidth: 1,
+                                                                borderColor: '#FFFFFF',
+                                                            }}
+                                                        />
+                                                    )}
+                                                </ThemedView>
+
+                                                {/* Name & Balance */}
+                                                <ThemedView style={{ flexDirection: 'column', gap: 2 }}>
+                                                    <ThemedText style={{
+                                                        fontFamily: 'AeonikMedium',
+                                                        fontSize: 14,
+                                                        lineHeight: 18,
+                                                        color: '#000000',
+                                                    }}>
+                                                        {asset.name}
+                                                    </ThemedText>
+                                                    <ThemedText style={{
+                                                        fontFamily: 'AeonikRegular',
+                                                        fontSize: 12,
+                                                        lineHeight: 14,
+                                                        color: '#757575',
+                                                    }}>
+                                                        {hideBalance ? "● ● ● ●" : `${balanceAmount} ${asset.currency}`}
+                                                    </ThemedText>
+                                                </ThemedView>
+                                            </ThemedView>
+
+                                            {/* Right Side */}
+                                            <ThemedView style={{ alignItems: 'flex-end', flexDirection: 'column', gap: 2 }}>
+                                                {/* Value */}
+                                                <ThemedText style={{
+                                                    fontFamily: 'AeonikMedium',
+                                                    fontSize: 14,
+                                                    lineHeight: 18,
+                                                    color: '#000000',
+                                                }}>
+                                                    {hideBalance ? "● ● ● ●" : `$${balanceInUsd}`}
+                                                </ThemedText>
+                                                {/* Change */}
+                                                <ThemedText style={{
+                                                    fontFamily: 'AeonikRegular',
+                                                    fontSize: 12,
+                                                    lineHeight: 14,
+                                                    color: isPositive ? '#0A7826' : '#DF1C41',
+                                                }}>
+                                                    {isPositive ? '+' : ''}{percent}%
+                                                </ThemedText>
+                                            </ThemedView>
+                                        </Pressable>
                                         );
-                                    })}
-                                </ScrollView>
+                                }}
+                            />
                             }
                         </ThemedView>
                     </ThemedSafeArea>
@@ -307,6 +383,7 @@ const styles = StyleSheet.create({
     },
     container: {
         paddingTop: Platform.OS === 'android' ? 50 : 0,
+        flex: 1,
     },
     header: {
         flexDirection: 'row',
@@ -397,16 +474,20 @@ const styles = StyleSheet.create({
         color: '#070707',
     },
     marketplaceContainer: {
-        paddingHorizontal: 20,
+        flex: 1, // Allow this container to grow and take available space
+        width: "100%", // Ensure full width usage
+        marginTop: 24, // Add some top margin for spacing
     },
     marketplaceLink: {
         marginBottom: 12,
-        flexDirection: 'row',
-        gap: 2,
+        alignItems: 'center', // Center content
     },
     marketplaceText: {
         fontFamily: 'AeonikMedium',
-        fontSize: 14,
+        fontSize: 20,
+        lineHeight: 24,
+        textAlign: 'center',
+        color: '#000000',
     },
     addAssetButton: {
         width: 32,
@@ -417,11 +498,10 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     transactionHistoryContainer: {
-        height: "100%",
-        backgroundColor: "#F5F5F5",
-        padding: 18,
-        borderRadius: 12,
-        gap: 12,
-        marginBottom: 50,
+        backgroundColor: "#FFFFFF",
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        flex: 1,
+        overflow: 'hidden',
     },
 });

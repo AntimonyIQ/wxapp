@@ -1,3 +1,5 @@
+import { IMarket } from '@/interface/interface';
+import React from 'react';
 import {
     Image,
     NativeSyntheticEvent,
@@ -7,10 +9,8 @@ import {
     TextInputFocusEventData,
     View,
 } from 'react-native';
-import React from 'react';
-import { IMarket } from '@/interface/interface';
-import ThemedView from '../ThemedView';
 import ThemedText from '../ThemedText';
+import ThemedView from '../ThemedView';
 
 interface SwapInputProps {
     onChangeCoin: () => void;
@@ -20,6 +20,7 @@ interface SwapInputProps {
     value: string;
     onFocus: (e: NativeSyntheticEvent<TextInputFocusEventData>) => void;
     readOnly: boolean;
+    balanceDisplay?: string;
 }
 
 export default class SwapTextField extends React.Component<SwapInputProps> {
@@ -28,7 +29,7 @@ export default class SwapTextField extends React.Component<SwapInputProps> {
     }
 
     render() {
-        const { onChangeCoin, asset, onMaxPress, onChangeText, value, onFocus, readOnly } = this.props;
+        const { onChangeCoin, asset, onMaxPress, onChangeText, value, onFocus, readOnly, balanceDisplay } = this.props;
 
         return (
             <ThemedView style={styles.container}>
@@ -36,11 +37,12 @@ export default class SwapTextField extends React.Component<SwapInputProps> {
                     <TextInput
                         placeholder='_'
                         style={styles.input}
-                        onChangeText={onChangeText}
+                        onChangeText={readOnly ? undefined : onChangeText}
                         value={value}
                         showSoftInputOnFocus={false}
-                        onFocus={onFocus}
-                        readOnly={readOnly || false}
+                        onFocus={readOnly ? undefined : onFocus}
+                        editable={!readOnly}
+                        pointerEvents={readOnly ? 'none' : 'auto'}
                         keyboardAppearance='dark'
                         keyboardType='phone-pad'
                         enablesReturnKeyAutomatically={false}
@@ -63,7 +65,7 @@ export default class SwapTextField extends React.Component<SwapInputProps> {
                         </Pressable>
                         <View style={styles.balanceContainer}>
                             <ThemedText style={styles.balanceText}>
-                                Balance: {asset.balance}
+                                Balance: {balanceDisplay !== undefined ? balanceDisplay : asset.balance}
                             </ThemedText>
                             <Pressable style={styles.maxButton} onPress={onMaxPress}>
                                 <ThemedText style={{ fontFamily: 'AeonikRegular', fontSize: 12 }}>Max</ThemedText>

@@ -10,22 +10,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import React from "react";
-import sessionManager from "@/session/session";
-import { IBank, IResponse, UserData } from "@/interface/interface";
-import logger from "@/logger/logger";
-import { router, Stack } from "expo-router";
-import { FlatList, Platform, RefreshControl, StyleSheet, Text } from "react-native";
-import { Image } from "expo-image";
-import PrimaryButton from "@/components/button/primary";
-import Defaults from "../default/default";
-import LoadingModal from "@/components/modals/loading";
 import BackButton from "@/components/button/back";
-import banks from "../data/banks.json";
-import ThemedView from "@/components/ThemedView";
+import PrimaryButton from "@/components/button/primary";
+import LoadingModal from "@/components/modals/loading";
 import ThemedText from "@/components/ThemedText";
+import ThemedView from "@/components/ThemedView";
 import ThemedSafeArea from "@/components/ThemeSafeArea";
 import { Status } from "@/enums/enums";
+import { IBank, IResponse, UserData } from "@/interface/interface";
+import logger from "@/logger/logger";
+import sessionManager from "@/session/session";
+import { Image } from "expo-image";
+import { router, Stack } from "expo-router";
+import React from "react";
+import { FlatList, Platform, RefreshControl, StyleSheet, Text, TextInput, View } from "react-native";
+import banks from "../data/banks.json";
+import Defaults from "../default/default";
 
 interface IProps { }
 
@@ -33,6 +33,7 @@ interface IState {
     accounts: Array<IBank>;
     loading: boolean;
     refreshing: boolean;
+    searchQuery: string;
 }
 
 export default class PaymentScreen extends React.Component<IProps, IState> {
@@ -44,6 +45,7 @@ export default class PaymentScreen extends React.Component<IProps, IState> {
             accounts: [],
             loading: true,
             refreshing: false,
+            searchQuery: "",
         };
         const login: boolean = Defaults.LOGIN_STATUS();
         if (!login) {
@@ -59,7 +61,6 @@ export default class PaymentScreen extends React.Component<IProps, IState> {
 
     private account = (code: string) => {
         const bank = banks.find((bank) => bank.code === code);
-        if (!bank) throw new Error(`Bank with code ${code} not found.`);
         return bank;
     }
 
@@ -105,20 +106,35 @@ export default class PaymentScreen extends React.Component<IProps, IState> {
         this.fetchAccounts();
     };
 
+    private handleSearch = (text: string) => {
+        this.setState({ searchQuery: text });
+    };
+
     private BankAccountView = ({ item }: { item: IBank }): React.JSX.Element => {
         const bank = this.account(item.bankCode);
+        const safeAccount = item.accountNumber ? `********${item.accountNumber.slice(Math.max(0, item.accountNumber.length - 2))}` : '********';
+        const logoUri = bank ? `https://cdn.jsdelivr.net/gh/supermx1/nigerian-banks-api@main/logos/${bank.slug}.png` : undefined;
+
         return (
             <ThemedView style={styles.bankAccountItem}>
-                <Image
-                    source={{ uri: `https://cdn.jsdelivr.net/gh/supermx1/nigerian-banks-api@main/logos/${bank.slug}.png` }}
-                    style={{ borderRadius: 360, width: 24, height: 24 }} />
-                <ThemedText style={styles.bankAccountInfo}>{`********${item.accountNumber.slice(-2)} ${item.bankName}`}</ThemedText>
+                {bank ? (
+                    <Image source={{ uri: logoUri }} style={{ width: 34, height: 34, borderRadius: 360 }} />
+                ) : (
+                    <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: '#D9D9D9' }} />
+                )}
+                <View style={styles.bankTextContainer}>
+                    <ThemedText style={styles.bankAccountTitle}>{item.accountName || 'N/A'}</ThemedText>
+                    <ThemedText style={styles.bankAccountSubtitle}>{`${safeAccount} • ${item.bankName || ''}`}</ThemedText>
+                </View>
             </ThemedView>
         );
     };
 
     render(): React.ReactNode {
-        const { accounts, loading, refreshing } = this.state;
+        const { accounts, loading, refreshing, searchQuery } = this.state;
+        const filteredAccounts = accounts.filter((account) =>
+            account.accountName.toLowerCase().includes(searchQuery.toLowerCase())
+        );
         return (
             <>
                 <Stack.Screen options={{ title: this.title, headerShown: false }} />
@@ -140,11 +156,19 @@ export default class PaymentScreen extends React.Component<IProps, IState> {
                     </ThemedView>
 
                     <ThemedView style={{ flexDirection: "column", alignItems: "center", width: "100%", padding: 20, }}>
-                        {!loading && accounts.length === 0 && <Text style={styles.emptyText}>No bank accounts available. Add a new bank account.</Text>}
+                        <TextInput
+                            style={styles.searchInput}
+                            placeholder="Search account name"
+                            placeholderTextColor="#8F92A1"
+                            value={searchQuery}
+                            onChangeText={this.handleSearch}
+                        />
 
-                        {!loading && accounts.length > 0 && (
+                        {!loading && filteredAccounts.length === 0 && <Text style={styles.emptyText}>{searchQuery ? "No account found matching your search." : "No bank accounts available. Add a new bank account."}</Text>}
+
+                        {!loading && filteredAccounts.length > 0 && (
                             <FlatList
-                                data={accounts} style={{ width: "100%" }}
+                                data={filteredAccounts} style={{ width: "100%" }}
                                 renderItem={this.BankAccountView}
                                 keyExtractor={(item) => item.accountNumber}
                                 contentContainerStyle={styles.listContainer}
@@ -276,9 +300,29 @@ const styles = StyleSheet.create({
         width: "100%",
         backgroundColor: '#F0F0F0',
     },
-    bankAccountInfo: {
+    bankTextContainer: {
         marginLeft: 12,
+        flex: 1,
+    },
+    bankAccountTitle: {
         fontSize: 14,
         fontFamily: 'AeonikMedium',
+        color: '#1F1F1F',
+    },
+    bankAccountSubtitle: {
+        fontSize: 12,
+        fontFamily: 'AeonikRegular',
+        color: '#757575',
+        marginTop: 2,
+    },
+    searchInput: {
+        width: '100%',
+        backgroundColor: '#F0F0F0',
+        borderRadius: 10,
+        padding: 12,
+        fontFamily: 'AeonikRegular',
+        fontSize: 14,
+        color: '#1F1F1F',
+        marginBottom: 15,
     },
 });

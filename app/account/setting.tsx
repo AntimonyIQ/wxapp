@@ -464,6 +464,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: 16,
+        paddingTop: Platform.OS === "web" ? 20 : 0,
     },
     backButton: {
         flexDirection: 'row',

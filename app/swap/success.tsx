@@ -33,6 +33,7 @@ export default class SwapDoneScreen extends React.Component<{}, {}> {
                                     lineHeight: 18,
                                     fontFamily: 'AeonikRegular',
                                     textAlign: 'center',
+                                    paddingHorizontal: 20
                                 }}
                             >
                                 We'll notify you once it's completed. Thank you for your patience!

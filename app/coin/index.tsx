@@ -24,7 +24,7 @@ import { Image } from "expo-image";
 import { router, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React from "react";
-import { ActivityIndicator, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, TouchableOpacity } from "react-native";
+import { ActivityIndicator, FlatList, Platform, Pressable, RefreshControl, StyleSheet, TouchableOpacity } from "react-native";
 import Defaults from "../default/default";
 
 interface IProps { }
@@ -79,6 +79,7 @@ export default class CoinScreen extends React.Component<IProps, IState> {
     componentDidMount(): void {
         const { currency, network } = this.session.params;
         const asset: IMarket = this.filterByCurrencyAndNetwork(currency, network);
+        console.log("assets: ", asset);
 
         this.setState({ asset }, () => {
             if (asset.currency === Coin.NGN) this.fetchNgnRate();
@@ -144,7 +145,9 @@ export default class CoinScreen extends React.Component<IProps, IState> {
 
         if (!market) throw new Error(`Error finding ${currency} wallet on ${network} network`);
         return market;
-    }; private showNetwork = (symbol: Coin): string => (symbol.toUpperCase() === Coin.USDT || symbol.toUpperCase() === Coin.USDC) ? "(BEP20)" : "";
+    };
+
+    private showNetwork = (symbol: Coin): string => (symbol.toUpperCase() === Coin.USDT || symbol.toUpperCase() === Coin.USDC) ? "(BEP20)" : "";
 
     private onRefresh = async () => {
         this.setState({ refreshing: true });
@@ -469,8 +472,10 @@ export default class CoinScreen extends React.Component<IProps, IState> {
                         }
 
                         {!loading && transactions.length > 0 &&
-                            <ScrollView
-                                style={{ width: "100%" }}
+                            <FlatList
+                                data={transactions}
+                                keyExtractor={(_, index) => index.toString()}
+                                style={{ width: "100%", flex: 1 }}
                                 showsVerticalScrollIndicator={false}
                                 contentContainerStyle={{
                                     paddingVertical: 5,
@@ -481,10 +486,9 @@ export default class CoinScreen extends React.Component<IProps, IState> {
                                         refreshing={refreshing}
                                         onRefresh={this.onRefresh}
                                     />
-                                }>
-                                {transactions.reverse().map((transaction, index) => (
-                                    <Pressable
-                                        key={index}
+                                }
+                            renderItem={({ item: transaction }) => (
+                                <Pressable
                                         style={{
                                             flexDirection: 'row',
                                             justifyContent: 'space-between',
@@ -561,8 +565,8 @@ export default class CoinScreen extends React.Component<IProps, IState> {
                                             </ThemedView>
                                         </ThemedView>
                                     </Pressable>
-                                ))}
-                            </ScrollView>
+                            )}
+                        />
                         }
 
                     </ThemedView>
@@ -709,6 +713,7 @@ const styles = StyleSheet.create({
     infoContainer: {
         marginTop: 42,
         paddingHorizontal: 16,
+        flex: 1,
     },
     balanceContainer: {
         alignItems: 'center',

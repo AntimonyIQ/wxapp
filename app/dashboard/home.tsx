@@ -16,7 +16,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Href, Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
-import { Alert, Dimensions, FlatList, Image, ImageBackground, Platform, Pressable, RefreshControl, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { Dimensions, FlatList, Image, ImageBackground, Platform, Pressable, RefreshControl, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import Carousel from 'react-native-reanimated-carousel';
 
 import Defaults from '@/app/default/default';
@@ -467,7 +467,7 @@ export default class DashboardScreen extends React.Component<IProps, IState> {
                                 : <Image source={require("../../assets/icons/usd.svg")} style={styles.ngSmallIcon} />
                             }
                             <Text style={styles.currencyText}>{fiat === "NGN" ? "Nigerian naira" : "United States dollar"}</Text>
-                            <Image source={require("../../assets/icons/arrow-down.svg")} style={{ width: 14, height: 14 }} />
+                            <Image source={require("../../assets/icons/arrow-down.svg")} style={{ width: 14, height: 14 }} tintColor={"#FFF"} />
                         </Pressable>
                         <View style={styles.headerIcons}>
                             <Pressable onPress={() => router.navigate('/dashboard/notification' as Href)}>
@@ -668,20 +668,17 @@ export default class DashboardScreen extends React.Component<IProps, IState> {
                         lists={(() => {
                             const session = sessionManager.getUserData();
                             const markets = (session && Array.isArray(session.markets)) ? session.markets : [];
-                            const filteredMarkets = markets.reduce((acc: any[], market: any) => {
+
+                            // Use central logic to get unique markets (preferring BSC)
+                            const uniqueMarkets = WalletService.getUniqueMarkets();
+
+                            // Apply Home-specific filters (e.g. hiding NGN for certain actions)
+                            const filteredMarkets = uniqueMarkets.filter((market: any) => {
                                 if ((this.state.assetAction === 'swap' || this.state.assetAction === 'deposit') && market.currency === 'NGN') {
-                                    return acc;
+                                    return false;
                                 }
-                                const existingIndex = acc.findIndex((m: any) => m.currency === market.currency);
-                                if (existingIndex === -1) {
-                                    acc.push(market);
-                                } else {
-                                    if (market.network === 'BSC') {
-                                        acc[existingIndex] = market;
-                                    }
-                                }
-                                return acc;
-                            }, []);
+                                return true;
+                            });
 
                             return filteredMarkets.map((market: any) => {
                                 const currencyNetwork = String(market.network).toUpperCase();
@@ -700,12 +697,14 @@ export default class DashboardScreen extends React.Component<IProps, IState> {
                                 };
                             });
                         })()}
-                        listChange={(item) => {
+                        listChange={async (item: any) => {
                             this.setState({ assetModalVisible: false });
                             if (this.state.assetAction === 'swap') {
                                 router.navigate('/swap');
                             } else {
-                                Alert.alert("Selected", item.name);
+                                const params: any = { currency: item.market.currency, network: item.market.network };
+                                await sessionManager.updateSession({ ...this.session, params: params });
+                                router.navigate("/coin");
                             }
                         }}
                     />
@@ -765,7 +764,7 @@ const styles = StyleSheet.create({
         paddingTop: Platform.OS === "web" ? 20 : 10,
         paddingBottom: 10,
         alignItems: 'center',
-        backgroundColor: Platform.OS === "web" ? "transparent" : '#fff'
+        backgroundColor: Platform.OS === "web" ? "rgba(41,38,98,1.00)" : '#ffffff'
     },
     avatar: {
         width: 30, height: 30, borderWidth: 1, borderColor: "#757575", backgroundColor: "#EEEEEE", borderRadius: 360
@@ -784,7 +783,7 @@ const styles = StyleSheet.create({
         lineHeight: 12,
         fontSize: 12,
         fontFamily: 'AeonikRegular',
-        color: "#1F1F1F"
+        color: "#ffffffff"
     },
     headerIcons: {
         flexDirection: 'row',
