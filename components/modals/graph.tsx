@@ -320,7 +320,7 @@ const styles = StyleSheet.create({
     },
     dialogContainer: {
         width: "100%",
-        height: "55%", // Increased height to fit new UI
+        height: "65%", // Increased height to fit new UI
         padding: 20,
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,

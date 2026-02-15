@@ -11,14 +11,13 @@
 // limitations under the License.
 
 import { Colors } from '@/constants/Colors';
-import React from 'react';
-import { Modal, StyleSheet, TouchableWithoutFeedback, Pressable, ColorSchemeName, TextInput, FlatList, TouchableOpacity } from 'react-native';
-import { Image } from 'expo-image';
 import logger from '@/logger/logger';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Platform } from 'react-native';
-import ThemedView from '../ThemedView';
+import { Image } from 'expo-image';
+import React from 'react';
+import { FlatList, Modal, Platform, Pressable, StyleSheet, TextInput, TouchableOpacity, TouchableWithoutFeedback } from 'react-native';
 import ThemedText from '../ThemedText';
+import ThemedView from '../ThemedView';
 
 interface PinProps {
     visible: boolean;
@@ -42,13 +41,18 @@ export default class PinModal extends React.Component<PinProps, PinState> {
         newInputs[index] = text;
         this.setState({ pins: newInputs });
 
-        if (text) {
-            if (index < this.state.pins.length - 1) {
-                this.inputRefs[index + 1].current?.focus();
-            }
-        } else {
-            if (index > 0) {
-                this.inputRefs[index - 1].current?.focus();
+        // On mobile web, focusing inputs can trigger the virtual keyboard
+        // which might cause layout shifts or "blinking" effects.
+        // We can avoid auto-focusing on web unless absolutely necessary.
+        if (Platform.OS !== 'web') {
+            if (text) {
+                if (index < this.state.pins.length - 1) {
+                    this.inputRefs[index + 1].current?.focus();
+                }
+            } else {
+                if (index > 0) {
+                    this.inputRefs[index - 1].current?.focus();
+                }
             }
         }
     };
@@ -62,12 +66,12 @@ export default class PinModal extends React.Component<PinProps, PinState> {
                 newPin[index] = "";
             } else if (index > 0) {
                 newPin[index - 1] = "";
-                this.inputRefs[index - 1].current?.focus();
+                // this.inputRefs[index - 1].current?.focus(); 
             }
         } else {
             newPin[index] = value;
             if (index < newPin.length - 1) {
-                this.inputRefs[index + 1].current?.focus();
+                // this.inputRefs[index + 1].current?.focus();
             }
         }
 
@@ -94,6 +98,7 @@ export default class PinModal extends React.Component<PinProps, PinState> {
                     keyboardType='numeric'
                     maxLength={1}
                     secureTextEntry={true}
+                    editable={Platform.OS !== 'web'} // Disable native input on web to prevent keyboard flickering
                     ref={this.inputRefs[index]}
                     onKeyPress={(e) => this.handleKeyPress(e, index)}
                     showSoftInputOnFocus={false}

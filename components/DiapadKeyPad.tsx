@@ -86,15 +86,15 @@ const styles = StyleSheet.create({
     },
     box: {
         width: 90,
-        height: 60,
+        height: 50,
         justifyContent: 'center',
         alignItems: 'center',
         marginHorizontal: 10,
-        marginVertical: 5,
+        marginVertical: 2,
         borderRadius: 10,
     },
     buttonText: {
-        fontSize: 28,
+        fontSize: 22,
         fontWeight: '500',
         fontFamily: 'AeonikMedium',
         color: '#000'

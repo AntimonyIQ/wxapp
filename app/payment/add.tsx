@@ -19,6 +19,7 @@ import ThemedView from "@/components/ThemedView";
 import ThemedSafeArea from "@/components/ThemeSafeArea";
 import { IBankList, IList, IResponse, UserData } from "@/interface/interface";
 import logger from "@/logger/logger";
+import WalletService from "@/service/wallet";
 import sessionManager from "@/session/session";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
@@ -26,7 +27,6 @@ import { router, Stack } from "expo-router";
 import React from "react";
 import { Platform, Pressable, StyleSheet, View } from "react-native";
 import Defaults from "../default/default";
-import WalletService from "@/service/wallet";
 
 interface IProps { }
 
@@ -313,11 +313,15 @@ export default class PaymentAddScreen extends React.Component<IProps, IState> {
                                     title="Add Account Number"
                                     showText={true}
                                     textValue={accountNumber}
-                                    onChangeText={(text) => this.setState({ accountNumber: text }, async () => {
-                                        await this.handleAccountResolve();
-                                    })}
+                                    onChangeText={(text) => {
+                                        const numericText = text.replace(/[^0-9]/g, '');
+                                        this.setState({ accountNumber: numericText }, async () => {
+                                            await this.handleAccountResolve();
+                                        });
+                                    }}
                                     showPasteButton={true}
                                     onFocus={() => this.setState({ list_modal: false })}
+                                    keyboardType="numeric"
                                 />
 
                                 <TextField

@@ -302,6 +302,7 @@ export default class WithdrawAccountScreen extends React.Component<IProps, IStat
                         lists={lists}
                         loading={loadingAccounts}
                         showSearch={true}
+                        title="Select Bank Account"
                     />
                     <MessageModal
                         visible={error_modal}

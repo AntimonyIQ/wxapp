@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { ColorSchemeName, Modal, Pressable, StyleSheet, TouchableWithoutFeedback } from 'react-native';
+import { Modal, Pressable, StyleSheet, TouchableWithoutFeedback, Platform } from 'react-native';
 import React from 'react';
 import { Image } from 'expo-image';
 import logger from '@/logger/logger';
@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     modalContent: {
-        height: '40%',
+        height: Platform.OS === 'web' ? '55%' : '40%',
         width: '100%',
         position: 'absolute',
         bottom: 0,
