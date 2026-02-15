@@ -27,6 +27,7 @@ import ThemedSafeArea from "@/components/ThemeSafeArea";
 import ThemedView from "@/components/ThemedView";
 import ThemedText from "@/components/ThemedText";
 import { Status } from "@/enums/enums";
+import Handshake from "@/handshake/handshake";
 
 interface IProps { }
 
@@ -135,6 +136,7 @@ export default class SignupScreen extends React.Component<IProps, IState> {
         try {
             this.setState({ loading: true });
             const { email, password, confirmPassword, conditions, fullName } = this.state;
+            const client = Handshake.generate();
 
             await Defaults.IS_NETWORK_AVAILABLE();
             if (!email || !password || !confirmPassword || !fullName) throw new Error("Form is not filled out correctly.");
@@ -144,21 +146,23 @@ export default class SignupScreen extends React.Component<IProps, IState> {
                 method: 'POST',
                 headers: {
                     ...Defaults.HEADERS,
-                    'x-wealthx-handshake': this.session.client.publicKey,
-                    'x-wealthx-deviceid': this.session.deviceid,
+                    'x-wealthx-handshake': client.publicKey,
+                    'x-wealthx-deviceid': client.publicKey,
                     'x-wealthx-location': this.session.location,
                 },
                 body: JSON.stringify({ email: email, password: password, fullName: fullName }),
             });
 
             const data: IResponse = await res.json();
-            console.log(data);
             if (data.status === Status.ERROR) throw new Error(data.message || data.error);
             if (data.status === Status.SUCCESS) {
                 const registration: IRegistration = { ...this.session.registration, email, password, confirmPassword, fullName, termsAndConditions: true };
-                await sessionManager.updateSession({
+                await sessionManager.login({
                     ...this.session,
-                    registration: registration
+                    registration: registration,
+                    isLoggedIn: false,
+                    client: client,
+                    deviceId: client.publicKey,
                 });
 
                 this.setState({ email: '', password: '', confirmPassword: '', fullName: '' });
