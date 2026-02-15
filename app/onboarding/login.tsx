@@ -30,6 +30,7 @@ import { router, Stack } from "expo-router";
 import React from "react";
 import { Keyboard, Platform, Pressable, StyleSheet } from "react-native";
 import Defaults from "../default/default";
+import Handshake from "@/handshake/handshake";
 
 interface IProps { }
 
@@ -72,6 +73,7 @@ export default class LoginScreen extends React.Component<IProps, IState> {
 
         try {
             this.setState({ loading: true });
+            const client = Handshake.generate();
 
             await Defaults.IS_NETWORK_AVAILABLE();
             if (!email || !password || !Validate.Email(email)) throw new Error("please provide email and password to continue");
@@ -80,7 +82,7 @@ export default class LoginScreen extends React.Component<IProps, IState> {
                 method: 'POST',
                 headers: {
                     ...Defaults.HEADERS,
-                    'x-wealthx-handshake': this.session.client.publicKey,
+                    'x-wealthx-handshake': client.publicKey,
                     'x-wealthx-deviceid': this.session.deviceid,
                     'x-wealthx-location': location ? `${location?.region}, ${location?.country}` : "Unknown",
                     'x-wealthx-ip': location?.ip || "Unknown",
@@ -93,14 +95,14 @@ export default class LoginScreen extends React.Component<IProps, IState> {
             if (data.status === Status.ERROR) throw new Error(data.message || data.error);
             if (data.status === Status.SUCCESS) {
                 if (!data.handshake) throw new Error('Unable to process login response right now, please try again.');
-                const parseData = Defaults.PARSE_DATA(data.data, this.session.client.privateKey, data.handshake);
+                const parseData = Defaults.PARSE_DATA(data.data, client.privateKey, data.handshake);
                 const authorization: string = parseData.authorization;
 
                 const res = await fetch(`${Defaults.API}/user`, {
                     method: 'GET',
                     headers: {
                         ...Defaults.HEADERS,
-                        'x-wealthx-handshake': this.session.client.publicKey,
+                        'x-wealthx-handshake': client.publicKey,
                         'x-wealthx-deviceid': this.session.deviceid,
                         Authorization: `Bearer ${authorization}`,
                     },
@@ -110,8 +112,8 @@ export default class LoginScreen extends React.Component<IProps, IState> {
                 if (userdata.status === Status.ERROR) throw new Error(userdata.message || userdata.error);
                 if (userdata.status === Status.SUCCESS) {
                     if (!userdata.handshake) throw new Error('Unable to process login response right now, please try again.');
-                    const userParseData: IUser = Defaults.PARSE_DATA(userdata.data, this.session.client.privateKey, userdata.handshake);
-                    await sessionManager.updateSession({
+                    const userParseData: IUser = Defaults.PARSE_DATA(userdata.data, client.privateKey, userdata.handshake);
+                    await sessionManager.login({
                         ...this.session,
                         isRegistred: true,
                         authorization: authorization,
