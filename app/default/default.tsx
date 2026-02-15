@@ -39,11 +39,9 @@ export default class Defaults {
     public static readonly HEADERS = {
         "Accept": "*/*",
         "Content-Type": "application/json",
-        'User-Agent': Platform.OS === 'ios'
-            ? 'Iphone'
-            : Platform.OS === 'android'
-                ? 'Android'
-                : 'Web',
+        ...(Platform.OS === 'ios' || Platform.OS === 'android' ? {
+            'User-Agent': Platform.OS === 'ios' ? 'Iphone' : 'Android',
+        } : {}),
         'x-wealthx-client': Platform.OS === 'ios'
             ? 'ios.wealthx.app'
             : Platform.OS === 'android'
@@ -141,6 +139,7 @@ export default class Defaults {
 
     static IS_NETWORK_AVAILABLE = async (): Promise<void> => {
         const state = await Network.getNetworkStateAsync();
+        if (Platform.OS === "web") return;
         if (!state.isConnected) throw new Error("Please connect to internet to retry!");
     };
 
