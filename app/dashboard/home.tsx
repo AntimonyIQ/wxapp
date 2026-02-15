@@ -60,7 +60,7 @@ const { width } = Dimensions.get("window");
 
 export default class DashboardScreen extends React.Component<IProps, IState> {
     private session: UserData = sessionManager.getUserData();
-    private readonly avatar = "https://api.dicebear.com/9.x/notionists/png";
+    private readonly avatar = "https://api.dicebear.com/9.x/micah/png";
     private unsubscribeWallet: (() => void) | null = null;
     private unsubscribeHideBalance: (() => void) | null = null;
     private toastRef = React.createRef<ToastRef>();
