@@ -360,7 +360,7 @@ class TransactionDetailsContent extends React.Component<IProps, IState> {
                     </ScrollView>
 
                     <View style={styles.shareButtonContainer}>
-                        <Pressable onPress={() => this.toastRef.current?.show("Share implementation pending", "info")} style={styles.shareButton}>
+                        <Pressable onPress={() => this.toastRef.current?.show("Share Receipt failed, please try again", "error")} style={styles.shareButton}>
                             <ThemedText style={styles.shareButtonText}>Share Receipt</ThemedText>
                         </Pressable>
                     </View>

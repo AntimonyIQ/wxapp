@@ -20,10 +20,10 @@ import sessionManager from "@/session/session";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router, Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import React from "react";
 import { FlatList, Platform, StyleSheet, TextInput, TouchableOpacity } from "react-native";
 import Defaults from "../default/default";
-import { StatusBar } from "expo-status-bar";
 
 interface IProps { }
 
@@ -82,12 +82,12 @@ export default class CreateNewPasskeyScreen extends React.Component<IProps, ISta
                 newPin[index] = "";
             } else if (index > 0) {
                 newPin[index - 1] = "";
-                this.pinRefs[index - 1].current?.focus();
+                if (Platform.OS !== 'web') this.pinRefs[index - 1].current?.focus();
             }
         } else {
             newPin[index] = value;
             if (index < newPin.length - 1) {
-                this.pinRefs[index + 1].current?.focus();
+                if (Platform.OS !== 'web') this.pinRefs[index + 1].current?.focus();
             }
         }
 
@@ -104,6 +104,7 @@ export default class CreateNewPasskeyScreen extends React.Component<IProps, ISta
                 <TextInput
                     style={styles.input}
                     value={item}
+                    editable={Platform.OS !== 'web'}
                     onChangeText={(text) => this.handlePinInput(text, index)}
                     keyboardType='numeric'
                     maxLength={1}

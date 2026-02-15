@@ -10,21 +10,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import React from "react";
-import sessionManager from "@/session/session";
-import { IResponse, IUser, UserData } from "@/interface/interface";
-import logger from "@/logger/logger";
-import { router, Stack } from "expo-router";
-import { FlatList, Platform, StyleSheet, TextInput, TouchableOpacity } from "react-native";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Image } from "expo-image";
-import Defaults from "../default/default";
 import LoadingModal from "@/components/modals/loading";
 import ThemedText from "@/components/ThemedText";
-import ThemedSafeArea from "@/components/ThemeSafeArea";
 import ThemedView from "@/components/ThemedView";
+import ThemedSafeArea from "@/components/ThemeSafeArea";
 import { Status } from "@/enums/enums";
+import { IResponse, IUser, UserData } from "@/interface/interface";
+import logger from "@/logger/logger";
+import sessionManager from "@/session/session";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { Image } from "expo-image";
+import { router, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import React from "react";
+import { FlatList, Platform, StyleSheet, TextInput, TouchableOpacity } from "react-native";
+import Defaults from "../default/default";
 
 interface IProps { }
 
@@ -133,12 +133,12 @@ export default class PasskeyScreen extends React.Component<IProps, IState> {
                 newPin[index] = "";
             } else if (index > 0) {
                 newPin[index - 1] = "";
-                this.pinRefs[index - 1].current?.focus();
+                if (Platform.OS !== 'web') this.pinRefs[index - 1].current?.focus();
             }
         } else {
             newPin[index] = value;
             if (index < newPin.length - 1) {
-                this.pinRefs[index + 1].current?.focus();
+                if (Platform.OS !== 'web') this.pinRefs[index + 1].current?.focus();
             }
         }
 
@@ -164,6 +164,7 @@ export default class PasskeyScreen extends React.Component<IProps, IState> {
                 <TextInput
                     style={styles.input}
                     value={item}
+                    editable={Platform.OS !== 'web'}
                     onChangeText={(text) => this.handlePinInput(text, index)}
                     keyboardType='numeric'
                     maxLength={1}

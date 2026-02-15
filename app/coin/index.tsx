@@ -15,6 +15,7 @@ import ThemedText from "@/components/ThemedText";
 import ThemedView from "@/components/ThemedView";
 import GraphModal from "@/components/modals/graph";
 import ListModal from "@/components/modals/list";
+import SimpleToast, { ToastRef } from "@/components/toast/toast";
 import { getAssetBySymbolAndNetwork, getAssetLogoURI } from "@/data/assets";
 import { BlockchainNetwork, Coin, Fiat, Status, TransactionStatus, TransactionType, WalletType } from "@/enums/enums";
 import { IMarket, IResponse, ITransaction, UserData } from "@/interface/interface";
@@ -42,6 +43,8 @@ interface IState {
 export default class CoinScreen extends React.Component<IProps, IState> {
     private session: UserData = sessionManager.getUserData();
     private readonly title = "Coin Screen";
+    private toastRef = React.createRef<ToastRef>();
+
     constructor(props: IProps) {
         super(props);
         this.state = {
@@ -362,6 +365,11 @@ export default class CoinScreen extends React.Component<IProps, IState> {
                                     <TouchableOpacity
                                         style={styles.actionButtonContainer}
                                         onPress={() => {
+                                            if (Platform.OS === 'web') {
+                                                this.toastRef.current?.show("Send cryptocurrency is disabled on the web, please download Wealthx app to use this feature.", "info");
+                                                return;
+                                            }
+
                                             if (this.session.user?.isPhoneNumberVerified === false) {
                                                 router.navigate("/phone/welcome");
                                                 return;
@@ -394,6 +402,12 @@ export default class CoinScreen extends React.Component<IProps, IState> {
                                                 this.setState({ visible: true, whichnav: "receive" });
                                                 return;
                                             }
+
+                                            if (!asset.active) {
+                                                this.toastRef.current?.show(`Deposit for ${asset.currency} (${asset.network}) Disabled at this time`, "error");
+                                                return;
+                                            }
+
                                             router.navigate('/coin/receive');
                                         }}
                                         style={styles.actionButtonContainer}>
@@ -604,12 +618,20 @@ export default class CoinScreen extends React.Component<IProps, IState> {
                                 return;
                             }
 
+                            const selectedNetwork = item.description as BlockchainNetwork;
+
                             if (whichnav === "send") {
-                                await sessionManager.updateSession({ ...this.session, params: { currency: asset.currency, network: item.description as BlockchainNetwork } })
+                                await sessionManager.updateSession({ ...this.session, params: { currency: asset.currency, network: selectedNetwork } })
                                 router.navigate('/send/input');
                             } else {
-                                await sessionManager.updateSession({ ...this.session, params: { currency: asset.currency, network: item.description as BlockchainNetwork } })
-                                router.navigate('/coin/receive');
+                                const selectedWallet = this.session.markets.find(m => m.currency === asset.currency && m.network === selectedNetwork);
+                                if (selectedWallet && selectedWallet.active) {
+                                    await sessionManager.updateSession({ ...this.session, params: { currency: asset.currency, network: selectedNetwork } })
+                                    router.navigate('/coin/receive');
+                                } else {
+                                    this.toastRef.current?.show(`Deposit for ${asset.currency} (${selectedNetwork}) Disabled at this time`, "error");
+                                    return;
+                                }
                             }
                         }}
                         showSearch={true} />
@@ -671,6 +693,7 @@ export default class CoinScreen extends React.Component<IProps, IState> {
 
                     <StatusBar style={"dark"} />
                 </ThemedSafeArea>
+                <SimpleToast ref={this.toastRef} />
             </>
         )
     }

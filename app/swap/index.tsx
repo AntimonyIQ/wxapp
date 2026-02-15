@@ -598,12 +598,14 @@ export default class SwapScreen extends React.Component<SwapProps, SwapState> {
 
                         {/* ── Info Container ─────────────────────────── */}
                         <ThemedView style={styles.infoContainer}>
+                            {/*
                             <ThemedView style={styles.infoRow}>
                                 <ThemedText style={styles.infoLabel}>Exchange fees</ThemedText>
                                 <ThemedText style={styles.infoValue}>
                                     {this.formatToMoneyString(exchangeFee)} {fromCurrency.currency} (~${this.formatToMoneyString(fromDollarEquivalent)})
                                 </ThemedText>
                             </ThemedView>
+                            */}
                             <PrimaryButton
                                 Gold
                                 title='Preview'
@@ -719,10 +721,10 @@ const styles = StyleSheet.create({
         marginHorizontal: 16,
     },
     infoContainer: {
-        padding: 12,
-        backgroundColor: '#F7F7F7',
-        borderRadius: 12,
-        marginTop: 20,
+        // padding: 12,
+        // backgroundColor: '#F7F7F7',
+        // borderRadius: 12,
+        marginTop: 15,
     },
     infoRow: {
         flexDirection: 'row',

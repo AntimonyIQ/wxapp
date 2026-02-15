@@ -1,6 +1,6 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
-import React, { Component } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
+import React, { Component } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
 
 interface IButtonProps {
     Gradient?: boolean;
@@ -20,13 +20,15 @@ export default class PrimaryButton extends Component<IButtonProps> {
             <Pressable onPress={onPress} disabled={disabled} style={{ width: "100%" }}>
                 <LinearGradient
                     colors={
-                        Gradient
-                            ? ["#2B49AB", "#101C41"]
-                            : Gold
-                                ? ['#FBA91E', '#FBA91E']
-                                : Grey
-                                    ? ['#D1D1D1', '#D1D1D1']
-                                    : ["#FFF", '#FFF']
+                        disabled && !loading
+                            ? ["#E0E0E0", "#E0E0E0"]
+                            : Gradient
+                                ? ["#2B49AB", "#101C41"]
+                                : Gold
+                                    ? ['#FBA91E', '#FBA91E']
+                                    : Grey
+                                        ? ['#D1D1D1', '#D1D1D1']
+                                        : ["#FFF", '#FFF']
                     }
                     start={{ x: 0, y: 0 }}
                     end={{
@@ -38,14 +40,17 @@ export default class PrimaryButton extends Component<IButtonProps> {
                         Gradient && styles.gradientButton,
                         Grey && styles.greyButton,
                         Gold && styles.goldButton,
-                        !Gold && { borderWidth: (Gradient || Grey) ? 0 : 1, borderColor: "#000000" }
+                        !Gold && (!disabled || loading) && { borderWidth: (Gradient || Grey) ? 0 : 1, borderColor: "#000000" }
                     ]}
                 >
                     {loading ? (
-                        <ActivityIndicator color="#fff" />
+                        <ActivityIndicator color={Gradient ? "#fff" : "#000"} />
                     ) : (
                         <Text
-                            style={[Gradient ? styles.gradientbuttontext : styles.buttontext]}
+                                style={[
+                                    Gradient ? styles.gradientbuttontext : styles.buttontext,
+                                    disabled && { color: "#9E9E9E" }
+                                ]}
                         >
                             {title}
                         </Text>

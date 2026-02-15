@@ -25,8 +25,8 @@ import { StatusBar } from "expo-status-bar";
 import React from "react";
 import { Dimensions, Platform, Pressable, Share, StyleSheet, TouchableOpacity, Vibration } from "react-native";
 import QRCode from 'react-native-qrcode-svg';
-import Toast from "react-native-toast-message";
 import Defaults from "../default/default";
+import SimpleToast, { ToastRef } from "@/components/toast/toast";
 
 interface IProps { }
 
@@ -39,6 +39,7 @@ export default class ReceiveScreen extends React.Component<IProps, IState> {
     private session: UserData = sessionManager.getUserData();
     private readonly title = "Receive Screen";
     private readonly isDesktop: boolean = Platform.OS === 'web' && Dimensions.get('window').width > 600;
+    private toastRef = React.createRef<ToastRef>();
     constructor(props: IProps) {
         super(props);
         this.state = {
@@ -100,13 +101,8 @@ export default class ReceiveScreen extends React.Component<IProps, IState> {
                 message: `Here is my ${asset.currency} wallet address: ${asset.address}`,
             });
         } catch (error: any) {
-            Toast.show({
-                type: 'error',
-                text1: 'Share Error',
-                text2: error.message,
-                text1Style: { fontSize: 16, fontFamily: 'AeonikBold' },
-                text2Style: { fontSize: 12, fontFamily: 'AeonikRegular' },
-            });
+            console.log("Failed to share");
+            // this.toastRef.current?.show(`Share Error: ${error.message}`, 'error');
         }
     }
 
@@ -123,13 +119,7 @@ export default class ReceiveScreen extends React.Component<IProps, IState> {
 
         const vibrationPattern = [0, 5];
         Vibration.vibrate(vibrationPattern, false);
-        Toast.show({
-            type: 'success',
-            text1: 'Copied',
-            text2: 'Wallet address copied to clipboard',
-            text1Style: { fontSize: 16, fontFamily: 'AeonikBold' },
-            text2Style: { fontSize: 12, fontFamily: 'AeonikRegular' },
-        });
+        this.toastRef.current?.show('Wallet address copied to clipboard', 'success');
     };
 
     render(): React.ReactNode {
@@ -182,7 +172,7 @@ export default class ReceiveScreen extends React.Component<IProps, IState> {
                             <ThemedView style={styles.qrCodeContainer}>
                                 <QRCode
                                     value={asset.address}
-                                    size={this.isDesktop ? 230 : Dimensions.get('window').width * 0.6}
+                                    size={this.isDesktop ? 200 : Dimensions.get('window').width * 0.4}
                                     logo={require("../../assets/images/icon.png")}
                                     logoSize={40}
                                     logoBorderRadius={360}
@@ -219,6 +209,7 @@ export default class ReceiveScreen extends React.Component<IProps, IState> {
                     </ThemedView>
                 </ThemedSafeArea>
                 <StatusBar style='dark' />
+                <SimpleToast ref={this.toastRef} />
             </>
         )
     }

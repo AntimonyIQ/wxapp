@@ -14,6 +14,7 @@ import LoadingModal from "@/components/modals/loading";
 import ThemedText from "@/components/ThemedText";
 import ThemedView from "@/components/ThemedView";
 import ThemedSafeArea from "@/components/ThemeSafeArea";
+import { Status } from "@/enums/enums";
 import { IResponse, UserData } from "@/interface/interface";
 import logger from "@/logger/logger";
 import sessionManager from "@/session/session";
@@ -23,7 +24,6 @@ import { router, Stack } from "expo-router";
 import React from "react";
 import { FlatList, Platform, StyleSheet, TextInput, TouchableOpacity } from "react-native";
 import Defaults from "../default/default";
-import { Status } from "@/enums/enums";
 
 interface IProps { }
 
@@ -140,12 +140,12 @@ export default class ConfirmNewPasskeyScreen extends React.Component<IProps, ISt
                 newPin[index] = "";
             } else if (index > 0) {
                 newPin[index - 1] = "";
-                this.pinRefs[index - 1].current?.focus();
+                if (Platform.OS !== 'web') this.pinRefs[index - 1].current?.focus();
             }
         } else {
             newPin[index] = value;
             if (index < newPin.length - 1) {
-                this.pinRefs[index + 1].current?.focus();
+                if (Platform.OS !== 'web') this.pinRefs[index + 1].current?.focus();
             }
         }
 
@@ -162,6 +162,7 @@ export default class ConfirmNewPasskeyScreen extends React.Component<IProps, ISt
                 <TextInput
                     style={styles.input}
                     value={item}
+                    editable={Platform.OS !== 'web'}
                     onChangeText={(text) => this.handlePinInput(text, index)}
                     keyboardType='numeric'
                     maxLength={1}
