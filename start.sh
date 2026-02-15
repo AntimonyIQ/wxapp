@@ -11,7 +11,7 @@ git fetch origin master
 git reset --hard origin/master
 
 echo "📦 Installing/updating dependencies..."
-npm install
+npm install --legacy-peer-deps
 
 echo "🔧 Building the app for Web..."
 npm run build:web
